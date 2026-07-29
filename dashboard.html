@@ -1811,8 +1811,9 @@
                                 <div class="flex space-x-2">
                                     <button onclick="promptWakeOnLan()" class="px-3 py-1.5 bg-mosp-warning/20 border border-mosp-warning text-mosp-warning hover:bg-mosp-warning hover:text-black rounded transition-colors text-xs font-bold"><i class="ph ph-lightning mr-1"></i> Send Magic Packet (WOL)</button>
                                     <button onclick="promptEditAgentConfig('broadcast')" class="px-3 py-1.5 bg-mosp-purple/20 border border-mosp-purple text-mosp-purple hover:bg-mosp-purple hover:text-white rounded transition-colors text-xs font-bold"><i class="ph ph-code mr-1"></i> Edit JSON Config</button>
-                                    <button onclick="alert('Downloading latest M-OSP Windows Agent package...')" class="px-3 py-1.5 bg-mosp-secondary/20 border border-mosp-secondary text-mosp-secondary hover:bg-mosp-secondary hover:text-black rounded transition-colors text-xs font-bold"><i class="ph ph-download-simple mr-1"></i> Download Installer</button>
-                                </div>
+                                    <button onclick="downloadAgentBinary()" class="px-3 py-1.5 bg-mosp-secondary/20 border border-mosp-secondary text-mosp-secondary hover:bg-mosp-secondary hover:text-black rounded transition-colors text-xs font-bold shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                                        <i class="ph ph-download-simple mr-1"></i> Download Installer
+                                    </button>
                             </div>
                             <div class="overflow-x-auto border border-mosp-border rounded">
                                 <table class="w-full text-left text-sm mosp-table">
@@ -5852,6 +5853,25 @@
                 alert("Network error connecting to payment provider.");
                 btn.innerHTML = originalText;
                 btn.disabled = false;
+            }
+        }
+
+        async function downloadAgentBinary() {
+            try {
+                // Create a temporary hidden link to trigger the file download natively
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = `${API_BASE_URL}/admin/agent/download`;
+                
+                document.body.appendChild(a);
+                a.click();
+                
+                // Cleanup
+                window.URL.revokeObjectURL(a.href);
+                document.body.removeChild(a);
+            } catch (err) {
+                console.error("Failed to download agent:", err);
+                alert("Agent binary is not currently available on the server.");
             }
         }
 
