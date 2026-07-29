@@ -343,24 +343,6 @@ async def websocket_endpoint(websocket: WebSocket, tenant_id: str, user_id: str,
     except WebSocketDisconnect:
         manager.disconnect(websocket, tenant_id, user_id)
 
-@app.get("/api/v1/admin/agent/download")
-async def download_agent_binary():
-    """Serves the pre-compiled MOSP-Agent.exe to IT Administrators for deployment."""
-    file_path = "MOSP-Agent.exe"
-    
-    # Check if you (the developer) have uploaded the compiled exe to the server
-    if not os.path.exists(file_path):
-        raise HTTPException(
-            status_code=404, 
-            detail="Agent binary not found on server. Developer must compile and upload MOSP-Agent.exe"
-        )
-        
-    return FileResponse(
-        path=file_path, 
-        filename="MOSP-Enterprise-Agent.exe",
-        media_type="application/x-msdownload"
-    )
-
 # --- Administration: Tenant API ---
 @app.get("/api/v1/admin/tenant")
 async def get_tenant_details(x_tenant_id: str = Header(None)):
@@ -405,10 +387,31 @@ async def get_tenant_details(x_tenant_id: str = Header(None)):
         "subscription_plan": meta.get("subscription_plan", "Standard"),
         "license_expiry": meta.get("license_expiry", (datetime.utcnow() + timedelta(days=30)).isoformat()),
         "endpoints_active": endpoints_active,
-        "endpoints_max": int(meta.get("endpoints_max", 5)),
+        "endpoints_max": int(meta.get("endpoints_max", 500)),
         "storage_used_gb": storage_used_gb,
-        "storage_max_gb": float(meta.get("storage_max_gb", 5.0))
+        "storage_max_gb": float(meta.get("storage_max_gb", 50.0))
     }
+
+@app.get("/api/v1/admin/agent/download")
+async def download_agent_binary(x_tenant_id: str = Header(None)):
+    """Serves the installer named dynamically with the tenant ID for zero-touch double-click installation."""
+    file_path = "MOSP-Agent.exe"
+    
+    if not os.path.exists(file_path):
+        raise HTTPException(
+            status_code=404, 
+            detail="Agent installer binary missing on server volume."
+        )
+        
+    # Default name fallback if no header provided
+    tenant_suffix = x_tenant_id if x_tenant_id else "Setup"
+    dynamic_filename = f"MOSP-Agent-{tenant_suffix}.exe"
+        
+    return FileResponse(
+        path=file_path, 
+        filename=dynamic_filename,
+        media_type="application/x-msdownload"
+    )
 
 # --- Agent Registration & Telemetry ---
 @app.post("/api/v1/endpoints/register")
