@@ -359,8 +359,8 @@ async def get_tenant_details(x_tenant_id: str = Header(None)):
             "name": "Megadriod Enterprise",
             "subscription_plan": "Enterprise Global",
             "license_expiry": (datetime.utcnow() + timedelta(days=365)).isoformat(),
-            "endpoints_max": "500",
-            "storage_max_gb": "50.0"
+            "endpoints_max": "5",
+            "storage_max_gb": "5.0"
         }
         await redis_client.hset(meta_key, mapping=meta)
 
@@ -387,9 +387,9 @@ async def get_tenant_details(x_tenant_id: str = Header(None)):
         "subscription_plan": meta.get("subscription_plan", "Standard"),
         "license_expiry": meta.get("license_expiry", (datetime.utcnow() + timedelta(days=30)).isoformat()),
         "endpoints_active": endpoints_active,
-        "endpoints_max": int(meta.get("endpoints_max", 500)),
+        "endpoints_max": int(meta.get("endpoints_max", 5)),
         "storage_used_gb": storage_used_gb,
-        "storage_max_gb": float(meta.get("storage_max_gb", 50.0))
+        "storage_max_gb": float(meta.get("storage_max_gb", 5.0))
     }
 
 @app.get("/api/v1/admin/agent/download")
