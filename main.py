@@ -13,7 +13,7 @@ from typing import Dict, List, Any
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException, Header, UploadFile, File
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import redis.asyncio as redis
@@ -394,23 +394,26 @@ async def get_tenant_details(x_tenant_id: str = Header(None)):
 
 @app.get("/api/v1/admin/agent/download")
 async def download_agent_binary(x_tenant_id: str = Header(None)):
-    """Serves the installer named dynamically with the tenant ID for zero-touch double-click installation."""
-    file_path = "MOSP-Agent.exe"
+    """Generates a 1KB double-click setup script fetching the release binary from Megadriod's GitHub."""
+    tenant_id = x_tenant_id if x_tenant_id else "Setup"
     
-    if not os.path.exists(file_path):
-        raise HTTPException(
-            status_code=404, 
-            detail="Agent installer binary missing on server volume."
-        )
-        
-    # Default name fallback if no header provided
-    tenant_suffix = x_tenant_id if x_tenant_id else "Setup"
-    dynamic_filename = f"MOSP-Agent-{tenant_suffix}.exe"
-        
-    return FileResponse(
-        path=file_path, 
-        filename=dynamic_filename,
-        media_type="application/x-msdownload"
+    # Direct CDN link to the asset in your Megadriod release
+    github_release_url = "https://github.com/Megadriod-company/megadriodosp/releases/download/v1.0.0/MOSP-Agent.exe"
+    server_url = "https://megadriodosp.onrender.com/api/v1"
+    
+    bat_content = f"""@echo off
+title M-OSP Agent Setup
+echo Installing M-OSP Enterprise Agent for Tenant: {tenant_id}...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$exe = '$env:TEMP\\MOSP-Agent.exe'; Invoke-WebRequest -Uri '{github_release_url}' -OutFile $exe; Start-Process $exe -ArgumentList '--tenant={tenant_id} --server={server_url}' -WindowStyle Hidden"
+echo Setup initiated successfully. You may close this window.
+"""
+
+    filename = f"MOSP-Setup-{tenant_id}.bat"
+    
+    return Response(
+        content=bat_content,
+        media_type="application/x-msdownload",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 # --- Agent Registration & Telemetry ---
