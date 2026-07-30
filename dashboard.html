@@ -2084,25 +2084,33 @@
     </main>
 
     <script>
-        // --- ENTERPRISE CONFIGURATION ---
+        // --- ENTERPRISE CONFIGURATION & SESSION HYDRATION ---
         const API_BASE_URL = window.location.origin + "/api/v1";
         const WS_PROTOCOL = window.location.protocol === "https:" ? "wss:" : "ws:";
         const WS_BASE_URL = `${WS_PROTOCOL}//${window.location.host}/ws`;
 
-        // Dynamically pull identity from session
-        let TENANT_ID = sessionStorage.getItem("MOSP_TENANT_ID");
-        let USER_ID = sessionStorage.getItem("MOSP_USER_ID");
-        let AUTH_TOKEN = sessionStorage.getItem("MOSP_AUTH_TOKEN");
-        
+        // Dynamically pull identity from storage (localStorage with sessionStorage fallback)
+        let TENANT_ID = sessionStorage.getItem("MOSP_TENANT_ID") || localStorage.getItem("MOSP_TENANT_ID");
+        let USER_ID = sessionStorage.getItem("MOSP_USER_ID") || localStorage.getItem("MOSP_USER_ID");
+        let AUTH_TOKEN = sessionStorage.getItem("MOSP_AUTH_TOKEN") || localStorage.getItem("MOSP_AUTH_TOKEN");
+
         let FETCH_HEADERS = {
             "Content-Type": "application/json"
         };
-        
+
         function updateHeaders() {
-            if(TENANT_ID) FETCH_HEADERS["X-Tenant-ID"] = TENANT_ID;
-            if(USER_ID) FETCH_HEADERS["X-User-ID"] = USER_ID;
-            if(AUTH_TOKEN) FETCH_HEADERS["Authorization"] = `Bearer ${AUTH_TOKEN}`;
+            // Re-read storage state in case of session updates
+            TENANT_ID = sessionStorage.getItem("MOSP_TENANT_ID") || localStorage.getItem("MOSP_TENANT_ID");
+            USER_ID = sessionStorage.getItem("MOSP_USER_ID") || localStorage.getItem("MOSP_USER_ID");
+            AUTH_TOKEN = sessionStorage.getItem("MOSP_AUTH_TOKEN") || localStorage.getItem("MOSP_AUTH_TOKEN");
+
+            if (TENANT_ID) FETCH_HEADERS["X-Tenant-ID"] = TENANT_ID;
+            if (USER_ID) FETCH_HEADERS["X-User-ID"] = USER_ID;
+            if (AUTH_TOKEN) FETCH_HEADERS["Authorization"] = `Bearer ${AUTH_TOKEN}`;
         }
+
+        // CRITICAL FIX: Immediately hydrate HTTP headers on script execution
+        updateHeaders();
 
         // --- AUTHENTICATION LOGIC ---
         function checkAuth() {
