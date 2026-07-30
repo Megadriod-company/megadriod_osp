@@ -393,45 +393,77 @@ async def get_tenant_details(x_tenant_id: str = Header(None)):
         "storage_max_gb": float(meta.get("storage_max_gb", 5.0))
     }
 
-from fastapi.responses import Response
-
 @app.get("/api/v1/admin/agent/download")
 async def download_agent_binary(tenant_id: str = None, x_tenant_id: str = Header(None)):
-    """Generates a setup script that saves MOSP-Agent.exe directly to the user's Downloads folder on any Windows system."""
+    """Generates an Enterprise setup script that installs MOSP-Agent.exe as a persistent Windows Service."""
     active_tenant = tenant_id or x_tenant_id or "Setup"
     
     github_release_url = "https://github.com/Megadriod-company/megadriodosp/releases/download/v1.0.0/MOSP-Agent.exe"
     server_url = "https://megadriodosp.onrender.com/api/v1"
+    ws_url = "wss://megadriodosp.onrender.com/ws"
     
     bat_content = f"""@echo off
-title M-OSP Agent Setup
+title M-OSP Enterprise Agent Setup
 echo ===================================================
 echo Installing M-OSP Enterprise Agent for Tenant: {active_tenant}
 echo ===================================================
 
-:: Dynamically targets the default Downloads folder on any Windows system
-set "TARGET_DIR=%USERPROFILE%\\Downloads"
-set "AGENT_EXE=%TARGET_DIR%\\MOSP-Agent.exe"
+:: 1. Request UAC (Administrator Privileges)
+>nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
+if '%errorlevel%' NEQ '0' (
+    echo Requesting administrative privileges...
+    goto UACPrompt
+) else ( goto gotAdmin )
 
-echo Downloading MOSP-Agent.exe to %TARGET_DIR%...
+:UACPrompt
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
+    "%temp%\\getadmin.vbs"
+    del "%temp%\\getadmin.vbs"
+    exit /B
+
+:gotAdmin
+    pushd "%CD%"
+    CD /D "%~dp0"
+
+:: 2. Setup Enterprise Directories
+set "AGENT_DIR=%PROGRAMDATA%\\Megadroid\\MOSP-Agent"
+if not exist "%AGENT_DIR%" mkdir "%AGENT_DIR%"
+set "AGENT_EXE=%AGENT_DIR%\\MOSP-Agent.exe"
+set "CONFIG_FILE=%AGENT_DIR%\\config.json"
+
+:: 3. Pre-seed Zero-Touch Configuration
+echo {{ > "%CONFIG_FILE%"
+echo   "api_base_url": "{server_url}", >> "%CONFIG_FILE%"
+echo   "ws_base_url": "{ws_url}", >> "%CONFIG_FILE%"
+echo   "tenant_id": "{active_tenant}", >> "%CONFIG_FILE%"
+echo   "agent_api_key": "" >> "%CONFIG_FILE%"
+echo }} >> "%CONFIG_FILE%"
+
+:: 4. Download Agent Binary
+echo Downloading MOSP-Agent.exe to %%AGENT_DIR%%...
 certutil.exe -urlcache -f -split "{github_release_url}" "%AGENT_EXE%"
 
 if not exist "%AGENT_EXE%" (
-    echo.
-    echo Primary download failed. Attempting background transfer via BITS...
+    echo Primary download failed. Attempting BITS transfer...
     bitsadmin /transfer MOSPDownload /download /priority FOREGROUND "{github_release_url}" "%AGENT_EXE%"
 )
 
 if exist "%AGENT_EXE%" (
-    echo.
     echo ===================================================
-    echo Download Successful! Saved to:
-    echo %AGENT_EXE%
-    echo Launching Agent...
+    echo Download Successful! 
+    echo Registering and Starting Windows Service...
     echo ===================================================
-    start /b "" "%AGENT_EXE%" --tenant={active_tenant} --server={server_url}
+    
+    :: Stop existing service if any
+    net stop MOSP_Agent >nul 2>&1
+    
+    :: Install and start as a persistent Windows Service
+    "%AGENT_EXE%" install
+    "%AGENT_EXE%" start
+    
+    echo M-OSP Agent Service is now running securely in the background.
 ) else (
-    echo.
     echo ERROR: Download Failed. Ensure network connectivity to GitHub Releases.
 )
 echo.
