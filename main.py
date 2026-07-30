@@ -405,7 +405,7 @@ async def download_agent_binary(tenant_id: str = None, x_tenant_id: str = Header
     """Generates an Enterprise setup script that installs MOSP-Agent.exe as a persistent Windows Service."""
     active_tenant = tenant_id or x_tenant_id or "Setup"
     
-    github_release_url = "https://github.com/Megadriod-company/megadriodosp/releases/download/v1.0.0/MOSP-Agent.exe"
+    github_release_url = "https://github.com/megadriodteam/megadriod-osp/releases/download/v1.0.0/MOSP-Agent.exe"
     server_url = "https://megadriodosp.onrender.com/api/v1"
     ws_url = "wss://megadriodosp.onrender.com/ws"
     
