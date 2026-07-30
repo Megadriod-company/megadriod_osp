@@ -359,8 +359,8 @@ async def get_tenant_details(x_tenant_id: str = Header(None)):
             "name": "Megadriod Enterprise",
             "subscription_plan": "Enterprise Global",
             "license_expiry": (datetime.utcnow() + timedelta(days=365)).isoformat(),
-            "endpoints_max": "500",
-            "storage_max_gb": "50.0"
+            "endpoints_max": "5",
+            "storage_max_gb": "5.0"
         }
         await redis_client.hset(meta_key, mapping=meta)
 
