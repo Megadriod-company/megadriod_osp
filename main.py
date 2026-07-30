@@ -38,9 +38,9 @@ app.add_middleware(
 
 # Global Redis Pool
 redis_client: redis.Redis = None
-REDIS_URL: str = os.getenv('REDIS_URL', 'rediss://default:gQAAAAAAAvK9AAIgcDE5Y2VhOWZhNGI3OGM0YmVhYmViZWYzYTAwNzRlYjk1YQ@nice-gecko-193213.upstash.io:6379')
+# Fetches securely from the hosting environment, no hardcoded credentials
+REDIS_URL: str = os.getenv('REDIS_URL')
 # Enterprise Billing Configuration (Paystack)
-PAYSTACK_SECRET_KEY = os.getenv("PAYSTACK_SECRET_KEY", "sk_test_your_paystack_key_here")
 
 @app.on_event("startup")
 async def startup_event():
@@ -392,23 +392,52 @@ async def get_tenant_details(x_tenant_id: str = Header(None)):
         "storage_max_gb": float(meta.get("storage_max_gb", 5.0))
     }
 
+from fastapi.responses import Response
+
 @app.get("/api/v1/admin/agent/download")
-async def download_agent_binary(x_tenant_id: str = Header(None)):
-    """Generates a 1KB double-click setup script fetching the release binary from Megadriod's GitHub."""
-    tenant_id = x_tenant_id if x_tenant_id else "Setup"
+async def download_agent_binary(tenant_id: str = None, x_tenant_id: str = Header(None)):
+    """Generates a setup script that saves MOSP-Agent.exe directly to the user's Downloads folder on any Windows system."""
+    active_tenant = tenant_id or x_tenant_id or "Setup"
     
-    # Direct CDN link to the asset in your Megadriod release
     github_release_url = "https://github.com/Megadriod-company/megadriodosp/releases/download/v1.0.0/MOSP-Agent.exe"
     server_url = "https://megadriodosp.onrender.com/api/v1"
     
     bat_content = f"""@echo off
 title M-OSP Agent Setup
-echo Installing M-OSP Enterprise Agent for Tenant: {tenant_id}...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$exe = '$env:TEMP\\MOSP-Agent.exe'; Invoke-WebRequest -Uri '{github_release_url}' -OutFile $exe; Start-Process $exe -ArgumentList '--tenant={tenant_id} --server={server_url}' -WindowStyle Hidden"
-echo Setup initiated successfully. You may close this window.
+echo ===================================================
+echo Installing M-OSP Enterprise Agent for Tenant: {active_tenant}
+echo ===================================================
+
+:: Dynamically targets the default Downloads folder on any Windows system
+set "TARGET_DIR=%USERPROFILE%\\Downloads"
+set "AGENT_EXE=%TARGET_DIR%\\MOSP-Agent.exe"
+
+echo Downloading MOSP-Agent.exe to %TARGET_DIR%...
+certutil.exe -urlcache -f -split "{github_release_url}" "%AGENT_EXE%"
+
+if not exist "%AGENT_EXE%" (
+    echo.
+    echo Primary download failed. Attempting background transfer via BITS...
+    bitsadmin /transfer MOSPDownload /download /priority FOREGROUND "{github_release_url}" "%AGENT_EXE%"
+)
+
+if exist "%AGENT_EXE%" (
+    echo.
+    echo ===================================================
+    echo Download Successful! Saved to:
+    echo %AGENT_EXE%
+    echo Launching Agent...
+    echo ===================================================
+    start /b "" "%AGENT_EXE%" --tenant={active_tenant} --server={server_url}
+) else (
+    echo.
+    echo ERROR: Download Failed. Ensure network connectivity to GitHub Releases.
+)
+echo.
+pause
 """
 
-    filename = f"MOSP-Setup-{tenant_id}.bat"
+    filename = f"MOSP-Setup-{active_tenant}.bat"
     
     return Response(
         content=bat_content,
