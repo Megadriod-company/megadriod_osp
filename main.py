@@ -205,6 +205,13 @@ class CSATSurvey(BaseModel):
 class ApiKeyCreate(BaseModel):
     name: str
 
+class VulnerabilityItem(BaseModel):
+    cve_identifier: str
+    severity: str
+    cvss_score: float
+    vulnerable_software: str
+    status: str
+    asset_id: str
 # ==========================================
 # Engine section
 # ==========================================
@@ -623,7 +630,7 @@ async def get_dashboard_summary(x_tenant_id: str = Header(None)):
         raise HTTPException(status_code=500, detail="Internal Metrics Aggregation Error")
 
 @app.post("/api/v1/assets/{asset_id}/vulnerabilities")
-async def receive_vulnerabilities(asset_id: str, payload: list, x_tenant_id: str = Header(None)):
+async def receive_vulnerabilities(asset_id: str, payload: List[VulnerabilityItem], x_tenant_id: str = Header(None)):
     """Ingests CVE exposure mappings compiled locally by the endpoint agent."""
     if not x_tenant_id or not redis_client:
         raise HTTPException(status_code=400, detail="Missing headers or Datastore Offline")
@@ -632,8 +639,11 @@ async def receive_vulnerabilities(asset_id: str, payload: list, x_tenant_id: str
         # Enforce strict namespace isolation per tenant
         vuln_key = f"tenant:{x_tenant_id}:vulnerabilities:{asset_id}"
         
+        # Safely serialize Pydantic models to dictionaries
+        vuln_data = [item.model_dump() if hasattr(item, 'model_dump') else item.dict() for item in payload]
+        
         # Overwrite current vulnerability state for this specific asset
-        await redis_client.set(vuln_key, json.dumps(payload))
+        await redis_client.set(vuln_key, json.dumps(vuln_data))
         
         logger.info(f"Ingested {len(payload)} vulnerabilities for Asset: {asset_id} @ Tenant: {x_tenant_id}")
         return {"status": "success", "cve_count": len(payload)}
