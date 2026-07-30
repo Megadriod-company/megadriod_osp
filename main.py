@@ -9,6 +9,7 @@ import shutil
 import uuid
 import psutil
 import httpx
+import uvicorn
 from typing import Dict, List, Any
 from datetime import datetime, timedelta
 
@@ -1980,7 +1981,16 @@ async def create_paystack_checkout(x_tenant_id: str = Header(None)):
         logger.error(f"Paystack Integration Failed: {str(e)}")
         raise HTTPException(status_code=500, detail="Payment gateway is currently unavailable.")
 
-if __name__ == "__main__":
-    import uvicorn
-    logger.info("Starting M-OSP Backend Engine...")
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+if __name__ == '__main__':
+    import sys
+    import asyncio
+    import win32serviceutil
+
+    service_cmds = {'install', 'remove', 'start', 'stop', 'restart', 'status', 'debug'}
+    
+    # Run in process/console mode if --tenant flag is present or no service commands passed
+    if len(sys.argv) == 1 or any(arg.startswith('--tenant') or arg.startswith('--server') for arg in sys.argv) or not (set(sys.argv[1:]) & service_cmds):
+        print('[M-OSP] Starting Agent process...')
+        asyncio.run(run_console())
+    else:
+        win32serviceutil.HandleCommandLine(MegadroidAgentService)
