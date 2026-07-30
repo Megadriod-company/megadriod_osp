@@ -5870,7 +5870,9 @@
                 // Create a temporary hidden link to trigger the file download natively
                 const a = document.createElement('a');
                 a.style.display = 'none';
-                a.href = `${API_BASE_URL}/admin/agent/download`;
+                
+                // Inject TENANT_ID dynamically into the query parameters for ZTP wrapper generation
+                a.href = `${API_BASE_URL}/admin/agent/download?tenant_id=${encodeURIComponent(TENANT_ID)}`;
                 
                 document.body.appendChild(a);
                 a.click();
