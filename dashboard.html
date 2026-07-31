@@ -73,8 +73,27 @@
         .mosp-tab { color: #9ca3af; border-bottom: 2px solid transparent; transition: all 0.2s; }
         .mosp-tab:hover { color: #e5e7eb; }
         .mosp-tab.active { color: #00f0ff; border-bottom-color: #00f0ff; }
+        
+        /* Flex Tab States for Internal Scrolling */
         .tab-content { display: none; }
         .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        .tab-content.active.flex-tab { display: flex !important; flex-direction: column; }
+        
+        .itsm-main-content { display: none; }
+        .itsm-main-content.active { display: block; animation: fadeIn 0.3s; }
+        .itsm-main-content.active.flex-tab { display: flex !important; flex-direction: column; }
+
+        .comp-content { display: none; }
+        .comp-content.active { display: block; animation: fadeIn 0.3s; }
+        .comp-content.active.flex-tab { display: flex !important; flex-direction: column; }
+        
+        .wp-content { display: none; }
+        .wp-content.active { display: block; animation: fadeIn 0.3s; }
+        .wp-content.active.flex-tab { display: flex !important; flex-direction: column; }
+
+        .admin-content { display: none; }
+        .admin-content.active { display: block; animation: fadeIn 0.3s; }
+        .admin-content.active.flex-tab { display: flex !important; flex-direction: column; }
     </style>
 </head>
 <body class="flex h-screen antialiased selection:bg-mosp-accent selection:text-black overflow-hidden">
@@ -167,6 +186,7 @@
                     <li><a href="#" onclick="switchView('network')" data-target="network" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-activity text-xl mr-3"></i><span class="font-medium text-sm">Network Operations</span></a></li>
                     <li><a href="#" onclick="switchView('reports')" data-target="reports" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-chart-bar text-xl mr-3"></i><span class="font-medium text-sm">Reports & Analytics</span></a></li>
                     <li><a href="#" onclick="switchView('admin')" data-target="admin" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-gear text-xl mr-3"></i><span class="font-medium text-sm">System Administration</span></a></li>
+                    <li><a href="#" onclick="switchView('gpo')" data-target="gpo" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-sliders text-xl mr-3"></i><span class="font-medium text-sm">Endpoint Config (GPO)</span></a></li>
                 </ul>
             </nav>
         </aside>
@@ -442,6 +462,10 @@
                         <button onclick="generateDiagnosticBundle()" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-mosp-panel border border-mosp-border text-mosp-secondary rounded hover:bg-mosp-secondary hover:text-black transition-colors flex items-center justify-center text-xs sm:text-sm font-bold shadow-[0_0_10px_rgba(59,130,246,0.1)] whitespace-nowrap">
                             <i class="ph ph-archive mr-1.5 sm:mr-2 text-lg"></i> Diag
                         </button>
+                        <!-- NEW CLOUD LAPS BUTTON -->
+                        <button onclick="retrieveLapsPassword()" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-mosp-panel border border-mosp-danger/50 text-mosp-danger rounded hover:bg-mosp-danger hover:text-white transition-colors flex items-center justify-center text-xs sm:text-sm font-bold shadow-[0_0_10px_rgba(255,42,42,0.1)] whitespace-nowrap">
+                            <i class="ph ph-key mr-1.5 sm:mr-2 text-lg"></i> LAPS Vault
+                        </button>
                         <!-- Live Telemetry Widget -->
                         <div id="live-telemetry-widget" class="hidden w-full sm:w-auto items-center justify-between sm:justify-start bg-black/40 border border-mosp-border rounded px-3 py-1 space-x-3">
                             <div class="flex flex-col items-center">
@@ -508,6 +532,9 @@
                         <button class="mosp-tab px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium focus:outline-none flex items-center flex-shrink-0" onclick="switchAssetTab('tab-services')"><i class="ph ph-gear text-lg mr-2"></i> Services</button>
                         <button class="mosp-tab px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium focus:outline-none flex items-center flex-shrink-0" onclick="switchAssetTab('tab-processes')"><i class="ph ph-activity text-lg mr-2"></i> Processes</button>
                         <button class="mosp-tab px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium focus:outline-none flex items-center flex-shrink-0" onclick="switchAssetTab('tab-files')"><i class="ph ph-folder text-lg mr-2"></i> Explorer</button>
+                        <button class="mosp-tab px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium focus:outline-none flex items-center flex-shrink-0" onclick="switchAssetTab('tab-shares')"><i class="ph ph-share-network text-lg mr-2"></i> SMB Shares</button>
+                        <button class="mosp-tab px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium focus:outline-none flex items-center flex-shrink-0" onclick="switchAssetTab('tab-net-diag')"><i class="ph ph-stethoscope text-lg mr-2"></i> Net Diagnostics</button>
+                        <button class="mosp-tab px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium focus:outline-none flex items-center flex-shrink-0" onclick="switchAssetTab('tab-it-tools')"><i class="ph ph-wrench text-lg mr-2"></i> IT Tools</button>
                         <button class="mosp-tab px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium focus:outline-none flex items-center flex-shrink-0" onclick="switchAssetTab('tab-usb')"><i class="ph ph-usb text-lg mr-2"></i> USB</button>
                         <button class="mosp-tab px-4 sm:px-6 py-3 sm:py-4 text-xs sm:text-sm font-medium focus:outline-none flex items-center flex-shrink-0" onclick="switchAssetTab('tab-baseline')"><i class="ph ph-shield-check text-lg mr-2"></i> ZTNA Baseline</button>
                     </div>
@@ -612,6 +639,670 @@
                                 <div class="mt-6 flex flex-wrap justify-center gap-3 sm:gap-4 px-2">
                                      <div class="text-[10px] sm:text-xs bg-mosp-panel border border-mosp-border px-3 py-2 rounded flex items-center whitespace-nowrap"><i class="ph ph-shield-check text-mosp-success mr-2"></i> E2E Encrypted</div>
                                      <div class="text-[10px] sm:text-xs bg-mosp-panel border border-mosp-border px-3 py-2 rounded flex items-center whitespace-nowrap"><i class="ph ph-list-magnifying-glass text-mosp-warning mr-2"></i> Audited Action</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SMB Shares Tab (NEW) -->
+                        <div id="tab-shares" class="tab-content">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-3 sm:space-y-0">
+                                <h4 class="text-white font-semibold flex items-center text-sm sm:text-base"><i class="ph ph-share-network text-mosp-purple mr-2"></i> Active Network Shares</h4>
+                                <div class="flex space-x-2 w-full sm:w-auto">
+                                    <button onclick="dispatchSmbHardening()" class="w-full sm:w-auto px-3 py-1.5 bg-mosp-warning/20 hover:bg-mosp-warning text-mosp-warning hover:text-black border border-mosp-warning/50 rounded text-xs transition-colors flex items-center justify-center whitespace-nowrap">
+                                        <i class="ph ph-shield-check mr-1.5"></i> Harden SMB Config
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="overflow-x-auto border border-mosp-border rounded w-full">
+                                <table class="w-full text-left text-xs sm:text-sm mosp-table min-w-[600px]">
+                                    <thead class="bg-mosp-panel text-gray-400 text-[10px] sm:text-xs">
+                                        <tr><th class="px-3 sm:px-4 py-2">Share Name</th><th class="px-3 sm:px-4 py-2">Local Path</th><th class="px-3 sm:px-4 py-2">Description</th><th class="px-3 sm:px-4 py-2 text-right">Risk Context</th></tr>
+                                    </thead>
+                                    <tbody id="det-shares-list" class="divide-y divide-mosp-border/50 text-gray-300">
+                                        <tr><td colspan="4" class="px-4 py-8 text-center text-gray-500 italic">No share data available.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4 p-3 bg-mosp-panel border border-mosp-border rounded text-xs text-gray-400">
+                                <i class="ph ph-info mr-1 text-mosp-secondary"></i> Note: In a Zero-Trust environment, administrative shares (C$, ADMIN$) expose endpoints to lateral movement. Use the 'Remote File Explorer' tab instead of legacy SMB for direct file management.
+                            </div>
+                        </div>
+
+                        <!-- Network Diagnostics Tab (NEW) -->
+                        <div id="tab-net-diag" class="tab-content">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-3 sm:space-y-0">
+                                <h4 class="text-white font-semibold flex items-center text-sm sm:text-base"><i class="ph ph-stethoscope text-mosp-accent mr-2"></i> Megadriod Advanced Network Diagnostics</h4>
+                            </div>
+
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full">
+                                <!-- Command Macros (Scrollable) -->
+                                <div class="space-y-4 pr-2 overflow-y-auto h-[600px] pb-10 custom-scrollbar">
+                                    
+                                    <!-- IP & DNS (15 IPConfig Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-secondary bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-globe mr-1"></i> IP Configuration & DNS</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-secondary/20 text-mosp-secondary border border-mosp-secondary/50 rounded text-[9px] font-bold uppercase tracking-wider">15 Modules</span>
+                                        </div>
+                                        
+                                        <!-- Sub-Category: Megadriod Auto-Fixes -->
+                                        <div class="mb-3 p-3 bg-mosp-accent/5 border border-mosp-accent/30 rounded">
+                                            <h6 class="text-[10px] font-bold text-mosp-accent mb-2 uppercase tracking-widest"><i class="ph ph-magic-wand mr-1"></i> Megadriod Automated Stack Repairs</h6>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <button onclick="dispatchNetDiag('mega_ipconfig_deep_renew')" class="px-3 py-2 bg-mosp-panel border border-mosp-accent text-white hover:bg-mosp-accent hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)] truncate" title="Release > FlushDNS > Renew">Deep IPv4 Renew</button>
+                                                <button onclick="dispatchNetDiag('mega_dns_repair_stack')" class="px-3 py-2 bg-mosp-panel border border-mosp-accent text-white hover:bg-mosp-accent hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)] truncate" title="FlushDNS > Restart Dnscache Service > RegisterDNS">Repair DNS Service</button>
+                                                <button onclick="dispatchNetDiag('mega_dhcp_force_restart')" class="px-3 py-2 bg-mosp-panel border border-mosp-accent text-white hover:bg-mosp-accent hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)] truncate" title="Release > Restart DHCP Service > Renew">Force DHCP Restart</button>
+                                                <button onclick="dispatchNetDiag('mega_ipv6_purge')" class="px-3 py-2 bg-mosp-panel border border-mosp-accent text-white hover:bg-mosp-accent hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(0,240,255,0.1)] truncate" title="Release6 > FlushDNS > Renew6">Purge IPv6 Stack</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Sub-Category: Standard IPv4 / Global -->
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Standard Configuration</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('ipconfig_basic')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] sm:text-xs font-mono transition-colors truncate">ipconfig</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_all')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] sm:text-xs font-mono transition-colors truncate">/all</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_allcompartments')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] sm:text-xs font-mono transition-colors truncate" title="Shows compartment details">/allcomp...</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_showclassid')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] sm:text-xs font-mono transition-colors truncate" title="Shows DHCP Class IDs">/showclassid</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_release')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] sm:text-xs font-mono transition-colors truncate">/release</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_renew')" class="px-2 py-1.5 bg-mosp-success/10 border border-mosp-success/50 text-mosp-success hover:bg-mosp-success hover:text-black rounded text-[10px] sm:text-xs font-mono transition-colors truncate">/renew</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_release6')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] sm:text-xs font-mono transition-colors truncate">/release6</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_renew6')" class="px-2 py-1.5 bg-mosp-success/10 border border-mosp-success/50 text-mosp-success hover:bg-mosp-success hover:text-black rounded text-[10px] sm:text-xs font-mono transition-colors truncate">/renew6</button>
+                                        </div>
+
+                                        <!-- Sub-Category: DNS Resolution -->
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">DNS Resolver Cache</h6>
+                                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('ipconfig_flushdns')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">/flushdns</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_displaydns')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">/displaydns</button>
+                                            <button onclick="dispatchNetDiag('ipconfig_registerdns')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">/registerdns</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Storage, File System & Disk Integrity (10 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-success bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-hard-drives mr-1"></i> Storage & Disk Integrity</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-success/20 text-mosp-success border border-mosp-success/50 rounded text-[9px] font-bold uppercase tracking-wider">20 Modules</span>
+                                        </div>
+                                        
+                                        <div class="flex space-x-2 mb-3 bg-mosp-panel/50 p-2 rounded border border-mosp-border">
+                                            <i class="ph ph-hard-drive text-gray-500 mt-1.5 ml-1"></i>
+                                            <input type="text" id="diag-disk-target" placeholder="Drive Letter (e.g. C:)" class="flex-1 bg-transparent border-none text-xs text-white outline-none font-mono placeholder-gray-600">
+                                        </div>
+
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('sfc_scannow')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="System File Checker: Scan and Repair">SFC /ScanNow</button>
+                                            <button onclick="dispatchNetDiag('sfc_verifyonly')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="System File Checker: Verify Only">SFC /VerifyOnly</button>
+                                            <button onclick="dispatchNetDiag('dism_restorehealth')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate col-span-2 whitespace-normal" title="DISM: Repair Component Store">DISM /RestoreHealth</button>
+                                            <button onclick="dispatchNetDiag('dism_scanhealth')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="DISM: Scan Component Store">DISM /ScanHealth</button>
+                                            <button onclick="dispatchNetDiag('dism_checkhealth')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="DISM: Check Component Store">DISM /CheckHealth</button>
+                                            <button onclick="dispatchTargetedDiag('chkdsk_scan', 'diag-disk-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Check Disk: Scan Only">CHKDSK (Scan)</button>
+                                            <button onclick="dispatchTargetedDiag('chkdsk_repair', 'diag-disk-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Check Disk: Repair Errors (/f /r /x)">CHKDSK (Repair)</button>
+                                        </div>
+                                        
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Volume & Boot Diagnostics</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('diskpart_list_disk')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="DiskPart: List Disks">list disk</button>
+                                            <button onclick="dispatchNetDiag('diskpart_list_vol')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="DiskPart: List Volumes">list vol</button>
+                                            <button onclick="dispatchNetDiag('bcdedit_enum')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="BCDEdit: Boot Config">bcdedit /enum</button>
+                                            <button onclick="dispatchNetDiag('reagentc_info')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="ReAgentC: Recovery Info">reagentc /info</button>
+                                            <button onclick="dispatchNetDiag('manage_bde_status')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="BitLocker Status">manage-bde</button>
+                                            <button onclick="dispatchTargetedDiag('optimize_volume', 'diag-disk-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Defrag / TRIM Volume">Optimize-Volume</button>
+                                            <button onclick="dispatchTargetedDiag('cipher_wipe', 'diag-disk-target')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Secure Wipe Free Space">cipher /w</button>
+                                            <button onclick="dispatchNetDiag('clear_recycle_bin')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Empty Recycle Bin">Clear-RecycleBin</button>
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Shadow Copies & SMART Health</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('vssadmin_list')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="List Volume Shadow Copies">vssadmin list</button>
+                                            <button onclick="dispatchNetDiag('vssadmin_delete')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Delete ALL Volume Shadow Copies">vssadmin delete</button>
+                                            <button onclick="dispatchNetDiag('fltmc_filters')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="List Minifilter Drivers">fltmc filters</button>
+                                            <button onclick="dispatchNetDiag('fsutil_dirty')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Check if C: is dirty">fsutil dirty C:</button>
+                                            <button onclick="dispatchNetDiag('ps_disk_health')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors col-span-2 whitespace-normal" title="Get-PhysicalDisk">Get-PhysicalDisk PS</button>
+                                            <button onclick="dispatchNetDiag('ps_smart_status')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors col-span-2 whitespace-normal" title="Deep SMART Reliability Counters">SMART Data PS</button>
+                                        </div>
+                                        
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">File & Folder Permissions</h6>
+                                        <div class="flex space-x-2 mb-2">
+                                            <input type="text" id="diag-perm-target" placeholder="File/Folder Path (e.g. C:\Data)" class="flex-1 bg-mosp-bg border border-mosp-border rounded px-2 py-1 text-xs text-white outline-none focus:border-mosp-success font-mono">
+                                            <button onclick="dispatchTargetedDiag('takeown_target', 'diag-perm-target')" class="px-3 py-1 bg-mosp-panel border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] transition-colors font-mono truncate whitespace-normal" title="Force Admin Ownership">takeown /f</button>
+                                            <button onclick="dispatchTargetedDiag('icacls_reset', 'diag-perm-target')" class="px-3 py-1 bg-mosp-panel border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] transition-colors font-mono truncate whitespace-normal" title="Reset Default Permissions">icacls /reset</button>
+                                        </div>
+
+                                        <div class="mb-3 p-3 bg-mosp-success/5 border border-mosp-success/30 rounded mt-3">
+                                            <span class="text-xs text-gray-400 mt-1.5 ml-1">Target:</span>
+                                            <input type="text" id="diag-path-target" placeholder="IP or Domain (e.g. 8.8.8.8)" class="flex-1 bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white outline-none focus:border-mosp-warning font-mono">
+                                        </div>
+                                        
+                                        <div class="mb-3 p-3 bg-mosp-success/5 border border-mosp-success/30 rounded">
+                                            <h6 class="text-[10px] font-bold text-mosp-success mb-2 uppercase tracking-widest"><i class="ph ph-magic-wand mr-1"></i> Megadriod Storage Automations</h6>
+                                            <div class="grid grid-cols-1 gap-2">
+                                                <button onclick="dispatchNetDiag('mega_disk_repair_chain')" class="px-3 py-2 bg-mosp-panel border border-mosp-success text-white hover:bg-mosp-success hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(0,255,157,0.1)] truncate whitespace-normal">Deep Repair Chain (DISM > SFC > CHKDSK)</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- DNS & NSLookup (10 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-secondary bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-magnifying-glass mr-1"></i> DNS & NSLookup</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-secondary/20 text-mosp-secondary border border-mosp-secondary/50 rounded text-[9px] font-bold uppercase tracking-wider">10 Modules</span>
+                                        </div>
+                                        <div class="flex space-x-2 mb-3 bg-mosp-panel/50 p-2 rounded border border-mosp-border">
+                                            <i class="ph ph-crosshair text-gray-500 mt-1.5 ml-1"></i>
+                                            <input type="text" id="diag-dns-target" placeholder="Domain or IP (e.g. megadriod.com)" class="flex-1 bg-transparent border-none text-xs text-white outline-none font-mono placeholder-gray-600">
+                                        </div>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchTargetedDiag('nslookup_basic', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate">nslookup</button>
+                                            <button onclick="dispatchTargetedDiag('nslookup_type_a', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate">-type=A</button>
+                                            <button onclick="dispatchTargetedDiag('nslookup_type_aaaa', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate">-type=AAAA</button>
+                                            <button onclick="dispatchTargetedDiag('nslookup_type_mx', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate">-type=MX</button>
+                                            <button onclick="dispatchTargetedDiag('nslookup_type_txt', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate">-type=TXT</button>
+                                            <button onclick="dispatchTargetedDiag('nslookup_type_soa', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate">-type=SOA</button>
+                                            <button onclick="dispatchTargetedDiag('nslookup_type_ns', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate">-type=NS</button>
+                                            <button onclick="dispatchTargetedDiag('nslookup_google', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate">Use 8.8.8.8</button>
+                                            <button onclick="dispatchTargetedDiag('ps_resolve_dnsname', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate col-span-2">Resolve-DnsName PS</button>
+                                            <button onclick="dispatchTargetedDiag('ps_resolve_dnsname_llmnr', 'diag-dns-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate col-span-2">-LlmnrOnly PS</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- ICMP & Connectivity (15 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-purple bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-waves mr-1"></i> ICMP Latency & Connectivity</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-purple/20 text-mosp-purple border border-mosp-purple/50 rounded text-[9px] font-bold uppercase tracking-wider">15 Modules</span>
+                                        </div>
+
+                                        <!-- Target Input shared for all Ping tools -->
+                                        <div class="flex space-x-2 mb-3 bg-mosp-panel/50 p-2 rounded border border-mosp-border">
+                                            <i class="ph ph-crosshair text-gray-500 mt-1.5 ml-1"></i>
+                                            <input type="text" id="diag-ping-target" placeholder="Enter Target IP or Hostname (Required)" class="flex-1 bg-transparent border-none text-xs text-white outline-none font-mono placeholder-gray-600">
+                                        </div>
+
+                                        <!-- Sub-Category: Megadriod Smart ICMP -->
+                                        <div class="mb-3 p-3 bg-mosp-purple/5 border border-mosp-purple/30 rounded">
+                                            <h6 class="text-[10px] font-bold text-mosp-purple mb-2 uppercase tracking-widest"><i class="ph ph-magic-wand mr-1"></i> Megadriod Smart ICMP Macros</h6>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <button onclick="dispatchNetDiag('mega_ping_gateway')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple/50 text-gray-300 hover:bg-mosp-purple hover:text-white rounded text-[10px] font-bold transition-colors truncate" title="Auto-finds and pings the active Default Gateway">Auto-Ping Gateway</button>
+                                                <button onclick="dispatchNetDiag('mega_ping_dns')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple/50 text-gray-300 hover:bg-mosp-purple hover:text-white rounded text-[10px] font-bold transition-colors truncate" title="Auto-finds and pings the Primary DNS Server">Auto-Ping DNS</button>
+                                                <button onclick="dispatchTargetedDiag('mega_ping_sweep', 'diag-ping-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple/50 text-gray-300 hover:bg-mosp-purple hover:text-white rounded text-[10px] font-bold transition-colors truncate" title="Pings Localhost, Gateway, Edge, and Target sequentially">Full Path Sweep</button>
+                                                <button onclick="dispatchTargetedDiag('mega_jitter_test', 'diag-ping-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple/50 text-gray-300 hover:bg-mosp-purple hover:text-white rounded text-[10px] font-bold transition-colors truncate" title="Pings 15 times and calculates network jitter variance">Jitter / Variance Test</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Sub-Category: Standard CMD ICMP -->
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Standard Native Ping Flags</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchTargetedDiag('ping_basic', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">ping</button>
+                                            <button onclick="dispatchTargetedDiag('ping_ipv4', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">-4 (IPv4)</button>
+                                            <button onclick="dispatchTargetedDiag('ping_ipv6', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">-6 (IPv6)</button>
+                                            <button onclick="dispatchTargetedDiag('ping_resolve', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate" title="Resolve hostname">-a (Resolve)</button>
+                                            <button onclick="dispatchTargetedDiag('ping_extended', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">-n 15 (Extended)</button>
+                                            <button onclick="dispatchTargetedDiag('ping_jumbo', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate" title="Large Payload Size">-l 8192 (Jumbo)</button>
+                                            <button onclick="dispatchTargetedDiag('ping_mtu_test', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] sm:text-xs font-mono transition-colors truncate" title="Don't fragment test">-f -l 1472 (MTU)</button>
+                                            <button onclick="dispatchTargetedDiag('ping_ttl', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate" title="Custom TTL">-i 15 (TTL)</button>
+                                            <button onclick="dispatchTargetedDiag('ping_qos', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate" title="Type of Service">-v 46 (QoS)</button>
+                                        </div>
+
+                                        <!-- Sub-Category: PowerShell ICMP -->
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">PowerShell NetCmdlets</h6>
+                                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+                                            <button onclick="dispatchTargetedDiag('ps_test_connection', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">Test-Connection</button>
+                                            <button onclick="dispatchTargetedDiag('ps_test_netconn_icmp', 'diag-ping-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] sm:text-xs font-mono transition-colors truncate">Test-NetConnection -Info</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Trace Route Analysis (15 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-purple bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-waves mr-1"></i> Tracert & Path Analysis</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-purple/20 text-mosp-purple border border-mosp-purple/50 rounded text-[9px] font-bold uppercase tracking-wider">15 Modules</span>
+                                        </div>
+                                        
+                                        <!-- Global Target Input for Tracert -->
+                                        <div class="flex space-x-2 mb-3 bg-mosp-panel p-2 rounded border border-mosp-border">
+                                            <span class="text-xs text-gray-400 mt-1.5 ml-1">Target:</span>
+                                            <input type="text" id="diag-trace-target" placeholder="IP or Domain (e.g. 8.8.8.8)" class="flex-1 bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white outline-none focus:border-mosp-purple font-mono">
+                                        </div>
+
+                                        <!-- Megadriod Automated Tracert Macros -->
+                                        <div class="mb-3 p-3 bg-mosp-purple/5 border border-mosp-purple/30 rounded">
+                                            <h6 class="text-[10px] font-bold text-mosp-purple mb-2 uppercase tracking-widest"><i class="ph ph-lightning mr-1"></i> Megadriod Tracert Automations</h6>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <button onclick="dispatchTargetedDiag('mega_tracert_fast', 'diag-trace-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple text-white hover:bg-mosp-purple hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(176,38,255,0.1)] truncate">Fast Trace (No DNS)</button>
+                                                <button onclick="dispatchTargetedDiag('mega_tracert_comprehensive', 'diag-trace-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple text-white hover:bg-mosp-purple hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(176,38,255,0.1)] truncate">Deep Trace (30 Hops)</button>
+                                                <button onclick="dispatchTargetedDiag('mega_route_bottleneck_scan', 'diag-trace-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple text-white hover:bg-mosp-purple hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(176,38,255,0.1)] truncate">Scan Hop Bottlenecks</button>
+                                                <button onclick="dispatchTargetedDiag('mega_trace_mtu', 'diag-trace-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple text-white hover:bg-mosp-purple hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(176,38,255,0.1)] truncate">Discover MTU Limits</button>
+                                                <button onclick="dispatchTargetedDiag('mega_trace_continuous', 'diag-trace-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple text-white hover:bg-mosp-purple hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(176,38,255,0.1)] truncate">Continuous Loop Trace</button>
+                                                <button onclick="dispatchNetDiag('mega_trace_gateway')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple text-white hover:bg-mosp-purple hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(176,38,255,0.1)] truncate">Trace to Default Gateway</button>
+                                                <button onclick="dispatchNetDiag('mega_trace_dns_servers')" class="px-3 py-2 bg-mosp-panel border border-mosp-purple text-white hover:bg-mosp-purple hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(176,38,255,0.1)] truncate">Trace to Primary DNS</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Standard Tracert -->
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Standard Trace Flags</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchTargetedDiag('tracert_basic', 'diag-trace-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors">tracert</button>
+                                            <button onclick="dispatchTargetedDiag('tracert_no_dns', 'diag-trace-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors">-d</button>
+                                            <button onclick="dispatchTargetedDiag('tracert_ipv4', 'diag-trace-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors">-4</button>
+                                            <button onclick="dispatchTargetedDiag('tracert_ipv6', 'diag-trace-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors">-6</button>
+                                            <button onclick="dispatchTargetedDiag('tracert_max_hops_10', 'diag-trace-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors">-h 10</button>
+                                            <button onclick="dispatchTargetedDiag('tracert_timeout_1000', 'diag-trace-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors">-w 1000</button>
+                                            <button onclick="dispatchTargetedDiag('ps_traceroute_basic', 'diag-trace-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors col-span-2">Test-NetConnection</button>
+                                            <button onclick="dispatchTargetedDiag('ps_traceroute_detailed', 'diag-trace-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors col-span-2">Resolve-DnsName + Trace</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- PathPing (15 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-warning bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-warning-circle mr-1"></i> PathPing & Packet Loss</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-warning/20 text-mosp-warning border border-mosp-warning/50 rounded text-[9px] font-bold uppercase tracking-wider">15 Modules</span>
+                                        </div>
+                                        
+                                        <!-- Global Target Input for PathPing -->
+                                        <div class="flex space-x-2 mb-3 bg-mosp-panel p-2 rounded border border-mosp-border">
+                                            <span class="text-xs text-gray-400 mt-1.5 ml-1">Target:</span>
+                                            <input type="text" id="diag-path-target" placeholder="IP or Domain (e.g. 8.8.8.8)" class="flex-1 bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white outline-none focus:border-mosp-warning font-mono">
+                                        </div>
+
+                                        <!-- Megadriod Automated PathPing Macros -->
+                                        <div class="mb-3 p-3 bg-mosp-warning/5 border border-mosp-warning/30 rounded">
+                                            <h6 class="text-[10px] font-bold text-mosp-warning mb-2 uppercase tracking-widest"><i class="ph ph-shield-warning mr-1"></i> Megadriod Loss Analyzers</h6>
+                                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <button onclick="dispatchTargetedDiag('mega_pathping_rapid', 'diag-path-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-warning text-white hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(255,234,0,0.1)] truncate whitespace-normal">Rapid PathPing (Fast)</button>
+                                                <button onclick="dispatchTargetedDiag('mega_pathping_deep', 'diag-path-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-warning text-white hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(255,234,0,0.1)] truncate whitespace-normal">Deep PathPing (Slow)</button>
+                                                <button onclick="dispatchTargetedDiag('mega_pathping_loss_analyzer', 'diag-path-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-warning text-white hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(255,234,0,0.1)] truncate whitespace-normal">Analyze Drop % Only</button>
+                                                <button onclick="dispatchTargetedDiag('mega_path_jitter_test', 'diag-path-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-warning text-white hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(255,234,0,0.1)] truncate whitespace-normal">Measure Path Jitter</button>
+                                                <button onclick="dispatchTargetedDiag('mega_path_mtu_discovery', 'diag-path-target')" class="px-3 py-2 bg-mosp-panel border border-mosp-warning text-white hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(255,234,0,0.1)] truncate whitespace-normal">Path MTU Analyzer</button>
+                                                <button onclick="dispatchNetDiag('mega_path_gateway_loss')" class="px-3 py-2 bg-mosp-panel border border-mosp-warning text-white hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(255,234,0,0.1)] truncate whitespace-normal">Test Gateway Drops</button>
+                                                <button onclick="dispatchNetDiag('mega_path_dns_loss')" class="px-3 py-2 bg-mosp-panel border border-mosp-warning text-white hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors shadow-[0_0_10px_rgba(255,234,0,0.1)] truncate whitespace-normal">Test DNS Server Drops</button>
+                                            </div>
+                                        </div>
+
+                                        <!-- Standard PathPing -->
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest">Standard PathPing Flags</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchTargetedDiag('pathping_basic', 'diag-path-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors">pathping</button>
+                                            <button onclick="dispatchTargetedDiag('pathping_no_dns', 'diag-path-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors">-n</button>
+                                            <button onclick="dispatchTargetedDiag('pathping_ipv4', 'diag-path-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors">-4</button>
+                                            <button onclick="dispatchTargetedDiag('pathping_ipv6', 'diag-path-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors">-6</button>
+                                            <button onclick="dispatchTargetedDiag('pathping_fast_query', 'diag-path-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors">-q 50</button>
+                                            <button onclick="dispatchTargetedDiag('pathping_short_interval', 'diag-path-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors">-p 100</button>
+                                            <button onclick="dispatchTargetedDiag('pathping_max_hops_15', 'diag-path-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors">-h 15</button>
+                                            <button onclick="dispatchTargetedDiag('ps_test_connection_path', 'diag-path-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors col-span-2 sm:col-span-1 text-center">Test-Conn PS</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Process, Service & User Management (15 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-secondary bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-users-three mr-1"></i> Process, Service & User Mgmt</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-secondary/20 text-mosp-secondary border border-mosp-secondary/50 rounded text-[9px] font-bold uppercase tracking-wider">15 Modules</span>
+                                        </div>
+                                        
+                                        <div class="flex space-x-2 mb-3 bg-mosp-panel/50 p-2 rounded border border-mosp-border">
+                                            <i class="ph ph-target text-gray-500 mt-1.5 ml-1"></i>
+                                            <input type="text" id="diag-sys-target" placeholder="Target User, Process.exe, or Service Name" class="flex-1 bg-transparent border-none text-xs text-white outline-none font-mono placeholder-gray-600">
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Task & Service Control</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('tasklist_v')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Tasklist Verbose">tasklist /v</button>
+                                            <button onclick="dispatchNetDiag('ps_get_process')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Top 20 CPU Processes">Top 20 Procs (PS)</button>
+                                            <button onclick="dispatchTargetedDiag('taskkill_target', 'diag-sys-target')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Force Kill Process">taskkill /F</button>
+                                            <button onclick="dispatchNetDiag('mega_spooler_reset')" class="px-2 py-1.5 bg-mosp-warning/10 border border-mosp-warning/50 text-mosp-warning hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Clear Spooler Queue & Restart">Mega Spooler Reset</button>
+                                            <button onclick="dispatchNetDiag('sc_query')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="List All Services">sc query all</button>
+                                            <button onclick="dispatchTargetedDiag('sc_qc_target', 'diag-sys-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Service Config">sc qc</button>
+                                            <button onclick="dispatchTargetedDiag('sc_qfailure_target', 'diag-sys-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal col-span-2" title="Service Failure Actions">sc qfailure</button>
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Identity & System Info</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchNetDiag('net_user')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="List Local Users">net user</button>
+                                            <button onclick="dispatchTargetedDiag('net_user_target', 'diag-sys-target')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="User Info">net user (target)</button>
+                                            <button onclick="dispatchNetDiag('net_localgroup_admin')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="List Local Admins">localgroup admins</button>
+                                            <button onclick="dispatchTargetedDiag('mega_user_unlock', 'diag-sys-target')" class="px-2 py-1.5 bg-mosp-success/10 border border-mosp-success/50 text-mosp-success hover:bg-mosp-success hover:text-black rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Unlock/Enable User">Unlock User</button>
+                                            <button onclick="dispatchNetDiag('systeminfo')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="System Info">systeminfo</button>
+                                            <button onclick="dispatchNetDiag('driverquery')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Driver Query">driverquery</button>
+                                            <button onclick="dispatchNetDiag('whoami_all')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Current Identity">whoami /all</button>
+                                            <button onclick="dispatchNetDiag('gpupdate_force')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Force GPUpdate">gpupdate /force</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Policy, WMI & Power Management (15 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-warning bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-lightning mr-1"></i> Policy, WMI & Power</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-warning/20 text-mosp-warning border border-mosp-warning/50 rounded text-[9px] font-bold uppercase tracking-wider">15 Modules</span>
+                                        </div>
+                                        
+                                        <div class="flex space-x-2 mb-3 bg-mosp-panel/50 p-2 rounded border border-mosp-border">
+                                            <i class="ph ph-clock text-gray-500 mt-1.5 ml-1"></i>
+                                            <input type="text" id="diag-power-target" placeholder="Shutdown/Reboot delay (e.g. 60)" class="flex-1 bg-transparent border-none text-xs text-white outline-none font-mono placeholder-gray-600">
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Group Policy & Power States</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('gpupdate_force')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Force GPUpdate">gpupdate /force</button>
+                                            <button onclick="dispatchNetDiag('gpresult_r')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Group Policy Result Summary">gpresult /r</button>
+                                            <button onclick="dispatchNetDiag('gpresult_v')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Group Policy Result Verbose">gpresult /v</button>
+                                            <button onclick="dispatchTargetedDiag('shutdown_r_target', 'diag-power-target')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Remote Reboot">shutdown /r</button>
+                                            <button onclick="dispatchNetDiag('powercfg_requests')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Show processes preventing sleep">powercfg /requests</button>
+                                            <button onclick="dispatchNetDiag('powercfg_waketimers')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Show active wake timers">powercfg /waketimers</button>
+                                            <button onclick="dispatchNetDiag('powercfg_battery')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Generate Battery Report (HTML)">Battery Report</button>
+                                            <button onclick="dispatchNetDiag('powercfg_energy')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Generate Energy Diagnostics (HTML)">Energy Report</button>
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Deep WMI / CIM Hardware Queries</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchNetDiag('wmi_os_uptime')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="OS & Exact Uptime">OS & Uptime</button>
+                                            <button onclick="dispatchNetDiag('wmi_compsys')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Computer System Info">Win32_CompSys</button>
+                                            <button onclick="dispatchNetDiag('wmi_baseboard')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Motherboard / BaseBoard Info">Win32_BaseBoard</button>
+                                            <button onclick="dispatchNetDiag('wmi_bios')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="BIOS / Firmware Info">Win32_BIOS</button>
+                                            <button onclick="dispatchNetDiag('wmi_physicalmemory')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Physical RAM Modules">Win32_Memory</button>
+                                            <button onclick="dispatchNetDiag('wmi_logicaldisk')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Logical Disks & Capacities">Win32_LogicalDisk</button>
+                                            <button onclick="dispatchNetDiag('wmi_startup')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors col-span-2 truncate whitespace-normal" title="Startup Commands & Apps">Win32_StartupCommand</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- BSOD & Crash Diagnostic Infrastructure (25+ Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-secondary bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-warning-circle mr-1"></i> BSOD & Crash Diagnostics</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-secondary/20 text-mosp-secondary border border-mosp-secondary/50 rounded text-[9px] font-bold uppercase tracking-wider">26 Modules</span>
+                                        </div>
+                                        <p class="text-[10px] text-gray-500 mb-3">Manage Windows crash dumps, recovery environments, and safe mode. <strong>WARNING:</strong> Safe Mode will disconnect the M-OSP agent unless networking is explicitly enabled.</p>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Crash Dump Configuration & Retrieval</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('wmic_recoveros')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Get Crash Dump Settings">Get Dump Config</button>
+                                            <button onclick="dispatchNetDiag('wmic_set_minidump')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Set to Small Memory Dump">Set Minidump</button>
+                                            <button onclick="dispatchNetDiag('wmic_set_kerneldump')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Set to Kernel Memory Dump">Set Kernel Dump</button>
+                                            <button onclick="dispatchNetDiag('wmic_disable_autoreboot')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Stop rebooting on crash">Halt on BSOD</button>
+                                            <button onclick="dispatchNetDiag('dir_minidump')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="List C:\Windows\Minidump">List Minidumps</button>
+                                            <button onclick="dispatchNetDiag('dir_memory_dmp')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Check C:\Windows\MEMORY.DMP">Check MEMORY.DMP</button>
+                                            <button onclick="dispatchNetDiag('zip_minidumps')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Zips dumps to %TEMP% for retrieval">Zip Minidumps to %TEMP%</button>
+                                            <button onclick="dispatchNetDiag('clear_minidumps')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Deletes all .dmp files">Clear Minidumps</button>
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Safe Mode & Boot Environment (BCDEdit)</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('bcdedit_safemode_minimal')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Force Next Boot to Safe Mode (NO NETWORK)">Safe Mode (Local Only)</button>
+                                            <button onclick="dispatchNetDiag('bcdedit_safemode_network')" class="px-2 py-1.5 bg-mosp-warning/10 border border-mosp-warning/50 text-mosp-warning hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Force Next Boot to Safe Mode with Networking">Safe Mode (Network)</button>
+                                            <button onclick="dispatchNetDiag('bcdedit_safemode_cmd')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Force Next Boot to Safe Mode Command Prompt">Safe Mode (CMD Only)</button>
+                                            <button onclick="dispatchNetDiag('bcdedit_safemode_off')" class="px-2 py-1.5 bg-mosp-success/10 border border-mosp-success/50 text-mosp-success hover:bg-mosp-success hover:text-black rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Remove Safe Boot Flags">Normal Boot (Fix)</button>
+                                            <button onclick="dispatchNetDiag('bcdedit_enable_f8')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Re-enables F8 key on boot">Enable F8 Menu</button>
+                                            <button onclick="dispatchNetDiag('bcdedit_disable_f8')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Standard Windows 10/11 boot menu">Disable F8 Menu</button>
+                                            <button onclick="dispatchNetDiag('bcdedit_enable_advanced')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Force Advanced Boot Options on restart">Force Adv. Options</button>
+                                            <button onclick="dispatchNetDiag('bcdedit_disable_advanced')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Remove Advanced Boot Options flag">Disable Adv. Options</button>
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">WinRE & Event Log Crash Analysis</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchNetDiag('reagentc_info')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="WinRE Status">reagentc /info</button>
+                                            <button onclick="dispatchNetDiag('reagentc_enable')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Enable WinRE">reagentc /enable</button>
+                                            <button onclick="dispatchNetDiag('reagentc_boottore')" class="px-2 py-1.5 bg-mosp-warning/10 border border-mosp-warning/50 text-mosp-warning hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Boot to Recovery Environment on next restart">Boot to WinRE</button>
+                                            <button onclick="dispatchNetDiag('mega_bsod_analyzer')" class="px-2 py-1.5 bg-mosp-secondary border border-mosp-secondary text-white hover:bg-blue-600 rounded text-[10px] font-bold transition-colors truncate whitespace-normal shadow-[0_0_10px_rgba(59,130,246,0.3)]" title="Aggregate Stop Codes and Config">Mega BSOD Analyzer</button>
+                                            <button onclick="dispatchNetDiag('ps_bugcheck_events')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal col-span-2" title="Event ID 1001 (BugCheck)">Extract BugChecks (1001)</button>
+                                            <button onclick="dispatchNetDiag('ps_kernel_power_41')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal col-span-2" title="Event ID 41 (Unexpected Shutdown)">Extract Kernel-Power (41)</button>
+                                        </div>
+
+                                     <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Megadriod Immediate BSOD Fixes</h6>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <button onclick="dispatchNetDiag('mega_fix_critical_process')" class="px-2 py-1.5 bg-mosp-panel border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Fix CRITICAL_PROCESS_DIED: Run sfc /scannow">Fix: CRITICAL_PROCESS_DIED</button>
+                                            <button onclick="dispatchNetDiag('mega_fix_memory_mgmt')" class="px-2 py-1.5 bg-mosp-panel border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Fix MEMORY_MANAGEMENT: Run mdsched.exe">Fix: MEMORY_MANAGEMENT</button>
+                                            <button onclick="dispatchNetDiag('mega_fix_inaccessible_boot')" class="px-2 py-1.5 bg-mosp-panel border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Fix INACCESSIBLE_BOOT_DEVICE: Run chkdsk">Fix: INACCESSIBLE_BOOT_DEVICE</button>
+                                            <button onclick="dispatchNetDiag('mega_fix_page_fault')" class="px-2 py-1.5 bg-mosp-panel border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Fix PAGE_FAULT_IN_NONPAGED_AREA: Schedule chkdsk">Fix: PAGE_FAULT_IN_NONPAGED_AREA</button>
+                                            <button onclick="dispatchNetDiag('mega_fix_whea')" class="px-2 py-1.5 bg-mosp-panel border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Fix WHEA_UNCORRECTABLE_ERROR: Hardware Inspection Required">Fix: WHEA_UNCORRECTABLE_ERROR</button>
+                                            <button onclick="dispatchNetDiag('mega_fix_kernel_inpage')" class="px-2 py-1.5 bg-mosp-panel border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Fix KERNEL_DATA_INPAGE_ERROR: Schedule chkdsk /r">Fix: KERNEL_DATA_INPAGE_ERROR</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Windows Graphical Management Tools & Consoles (15 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-accent bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-windows-logo mr-1"></i> Windows Mgmt Consoles</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-accent/20 text-mosp-accent border border-mosp-accent/50 rounded text-[9px] font-bold uppercase tracking-wider">20 Modules</span>
+                                        </div>
+                                        <p class="text-[10px] text-gray-500 mb-3">These commands launch native Windows GUI tools directly on the endpoint. Ensure the user is aware before executing to prevent interruption.</p>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Core MMC Consoles</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('mmc_eventvwr')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Event Viewer">eventvwr.msc</button>
+                                            <button onclick="dispatchNetDiag('mmc_compmgmt')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Computer Management">compmgmt.msc</button>
+                                            <button onclick="dispatchNetDiag('mmc_devmgmt')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Device Manager">devmgmt.msc</button>
+                                            <button onclick="dispatchNetDiag('mmc_diskmgmt')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Disk Management">diskmgmt.msc</button>
+                                            <button onclick="dispatchNetDiag('mmc_services')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Services">services.msc</button>
+                                            <button onclick="dispatchNetDiag('mmc_gpedit')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Local Group Policy">gpedit.msc</button>
+                                            <button onclick="dispatchNetDiag('mmc_secpol')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Local Security Policy">secpol.msc</button>
+                                            <button onclick="dispatchNetDiag('mmc_perfmon')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Performance Monitor">perfmon.msc</button>
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">System Executables & Analyzers</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('exe_taskmgr')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Task Manager">taskmgr.exe</button>
+                                            <button onclick="dispatchNetDiag('exe_resmon')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Resource Monitor">resmon.exe</button>
+                                            <button onclick="dispatchNetDiag('mmc_perfmon_rel')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Reliability Monitor">perfmon /rel</button>
+                                            <button onclick="dispatchNetDiag('exe_msconfig')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="System Configuration">msconfig.exe</button>
+                                            <button onclick="dispatchNetDiag('exe_regedit')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Registry Editor">regedit.exe</button>
+                                            <button onclick="dispatchNetDiag('exe_dxdiag')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="DirectX Diagnostics">dxdiag.exe</button>
+                                            <button onclick="dispatchNetDiag('exe_mdsched')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Memory Diagnostic">mdsched.exe</button>
+                                            <button onclick="dispatchNetDiag('exe_mrt')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Malicious Software Removal Tool">mrt.exe</button>
+                                        </div>
+                                        
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Control Panel (.cpl) Applets</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                                            <button onclick="dispatchNetDiag('cpl_ncpa')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Network Connections">ncpa.cpl</button>
+                                            <button onclick="dispatchNetDiag('cpl_appwiz')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Programs and Features">appwiz.cpl</button>
+                                            <button onclick="dispatchNetDiag('cpl_sysdm')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="System Properties">sysdm.cpl</button>
+                                            <button onclick="dispatchNetDiag('cpl_firewall')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Windows Defender Firewall">firewall.cpl</button>
+                                            <button onclick="dispatchNetDiag('cpl_powercfg')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Power Options">powercfg.cpl</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Netstat & Active Sockets (10 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-accent bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-plugs mr-1"></i> Netstat & Active Sockets</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-accent/20 text-mosp-accent border border-mosp-accent/50 rounded text-[9px] font-bold uppercase tracking-wider">10 Modules</span>
+                                        </div>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchNetDiag('netstat_basic')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">netstat</button>
+                                            <button onclick="dispatchNetDiag('netstat_a')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">-a (All)</button>
+                                            <button onclick="dispatchNetDiag('netstat_ano')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">-ano (PIDs)</button>
+                                            <button onclick="dispatchNetDiag('netstat_ab')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">-ab (EXEs)</button>
+                                            <button onclick="dispatchNetDiag('netstat_e')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">-e (Ethernet)</button>
+                                            <button onclick="dispatchNetDiag('netstat_s')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">-s (Stats)</button>
+                                            <button onclick="dispatchNetDiag('netstat_r')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">-r (Routes)</button>
+                                            <button onclick="dispatchNetDiag('netstat_p_tcp')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">-p tcp</button>
+                                            <button onclick="dispatchNetDiag('netstat_p_udp')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors truncate">-p udp</button>
+                                            <button onclick="dispatchNetDiag('ps_nettcpconn')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-accent rounded text-[10px] font-mono transition-colors col-span-2 sm:col-span-3 truncate">Get-NetTCPConnection PS</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Winsock Catalog Diagnostics (10 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-danger bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-mosp-danger font-bold text-xs uppercase tracking-widest"><i class="ph ph-warning-octagon mr-1"></i> Winsock Catalog Diagnostics</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-danger/20 text-mosp-danger border border-mosp-danger/50 rounded text-[9px] font-bold uppercase tracking-wider">10 Modules</span>
+                                        </div>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchNetDiag('winsock_reset')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate" title="Destructive: netsh winsock reset">Reset Winsock</button>
+                                            <button onclick="dispatchNetDiag('winsock_show_catalog')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-danger rounded text-[10px] font-mono transition-colors truncate">show catalog</button>
+                                            <button onclick="dispatchNetDiag('winsock_reset_catalog')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate" title="Destructive: Reset specific catalog">Reset Catalog</button>
+                                            <button onclick="dispatchNetDiag('winsock_audit')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-danger rounded text-[10px] font-mono transition-colors truncate">audit</button>
+                                            <button onclick="dispatchNetDiag('winsock_show_autotuning')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-danger rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Shows TCP auto-tuning levels">TCP AutoTuning</button>
+                                            <button onclick="dispatchNetDiag('winsock_set_autotuning')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-danger rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Sets TCP auto-tuning to normal">Set AutoTuning</button>
+                                            <button onclick="dispatchNetDiag('winsock_dump')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-danger rounded text-[10px] font-mono transition-colors truncate">dump</button>
+                                            <button onclick="dispatchNetDiag('winsock_show_provider')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-danger rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show provider</button>
+                                            <button onclick="dispatchNetDiag('winsock_reset_ipv4')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate" title="Destructive: netsh int ipv4 reset">Reset IPv4</button>
+                                            <button onclick="dispatchNetDiag('winsock_reset_ipv6')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate" title="Destructive: netsh int ipv6 reset">Reset IPv6</button>
+                                            <button onclick="dispatchNetDiag('mega_winsock_hard_rebuild')" class="px-2 py-1.5 bg-mosp-danger border border-mosp-danger text-black font-bold hover:bg-red-600 rounded text-[10px] transition-colors col-span-2 sm:col-span-2 truncate shadow-[0_0_10px_rgba(255,42,42,0.5)] whitespace-normal">Nuclear Hard Rebuild</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- TCP/IP Stack Diagnostics (10 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-warning bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-mosp-warning font-bold text-xs uppercase tracking-widest"><i class="ph ph-activity mr-1"></i> TCP/IP Stack Diagnostics</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-warning/20 text-mosp-warning border border-mosp-warning/50 rounded text-[9px] font-bold uppercase tracking-wider">10 Modules</span>
+                                        </div>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchNetDiag('tcpip_reset')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-warning/50 text-mosp-warning hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors truncate" title="Destructive: netsh int ip reset">Reset IP</button>
+                                            <button onclick="dispatchNetDiag('tcpip_show_config')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show config</button>
+                                            <button onclick="dispatchNetDiag('tcpip_show_interfaces')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show interfaces</button>
+                                            <button onclick="dispatchNetDiag('tcpip_show_tcp_stats')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show TCP stats</button>
+                                            <button onclick="dispatchNetDiag('tcpip_show_udp_stats')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show UDP stats</button>
+                                            <button onclick="dispatchNetDiag('tcpip_show_ip_stats')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show IP stats</button>
+                                            <button onclick="dispatchNetDiag('tcpip_delete_arp')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-warning/50 text-mosp-warning hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors truncate" title="Destructive: netsh int ip delete arpcache">Delete ARP</button>
+                                            <button onclick="dispatchNetDiag('tcpip_reset_tcp')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-warning/50 text-mosp-warning hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors truncate" title="Destructive: netsh int tcp reset">Reset TCP</button>
+                                            <button onclick="dispatchNetDiag('tcpip_set_heuristics')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal">Set Heuristics</button>
+                                            <button onclick="dispatchNetDiag('mega_tcpip_flush_all')" class="px-2 py-1.5 bg-mosp-warning border border-mosp-warning text-black font-bold hover:bg-yellow-600 rounded text-[10px] transition-colors col-span-2 sm:col-span-3 truncate shadow-[0_0_10px_rgba(255,234,0,0.3)] whitespace-normal">Flush All TCP/IP Layers</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Host Firewall Administration (10 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-gray-500 bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-wall mr-1"></i> Host Firewall Administration</h5>
+                                            <span class="px-2 py-0.5 bg-gray-500/20 text-gray-400 border border-gray-500/50 rounded text-[9px] font-bold uppercase tracking-wider">10 Modules</span>
+                                        </div>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchNetDiag('fw_on_all')" class="px-2 py-1.5 bg-mosp-success/10 border border-mosp-success/50 text-mosp-success hover:bg-mosp-success hover:text-black rounded text-[10px] font-bold transition-colors truncate whitespace-normal">State ON (All)</button>
+                                            <button onclick="dispatchNetDiag('fw_off_all')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Destructive: Disables host firewall">State OFF (All)</button>
+                                            <button onclick="dispatchNetDiag('fw_show_all')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] font-mono transition-colors truncate whitespace-normal">Show Profiles</button>
+                                            <button onclick="dispatchNetDiag('fw_show_current')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] font-mono transition-colors truncate whitespace-normal">Show Current</button>
+                                            <button onclick="dispatchNetDiag('fw_reset')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Destructive: Resets to default policy">Reset Firewall</button>
+                                            <button onclick="dispatchNetDiag('fw_block_inbound')" class="px-2 py-1.5 bg-mosp-warning/10 border border-mosp-warning/50 text-mosp-warning hover:bg-mosp-warning hover:text-black rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Sets default policy to Block Inbound">Block Inbound</button>
+                                            <button onclick="dispatchNetDiag('fw_allow_inbound')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] font-mono transition-colors truncate whitespace-normal">Allow Inbound</button>
+                                            <button onclick="dispatchNetDiag('fw_enable_ping')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] font-mono transition-colors truncate whitespace-normal">Allow ICMP Ping</button>
+                                            <button onclick="dispatchNetDiag('fw_ps_profiles')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] font-mono transition-colors col-span-2 truncate whitespace-normal">Get-NetFirewallProfile</button>
+                                            <button onclick="dispatchNetDiag('fw_ps_rules')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] font-mono transition-colors col-span-2 truncate whitespace-normal">Get-NetFirewallRule Top 20</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- WLAN & Wireless Interfaces (10 Tools) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-success bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-wifi-high mr-1"></i> WLAN & Wireless Interfaces</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-success/20 text-mosp-success border border-mosp-success/50 rounded text-[9px] font-bold uppercase tracking-wider">10 Modules</span>
+                                        </div>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                            <button onclick="dispatchNetDiag('wlan_show_profiles')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show profiles</button>
+                                            <button onclick="dispatchNetDiag('wlan_show_interfaces')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show interfaces</button>
+                                            <button onclick="dispatchNetDiag('wlan_show_networks')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show networks</button>
+                                            <button onclick="dispatchNetDiag('wlan_show_bssid')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show BSSID</button>
+                                            <button onclick="dispatchNetDiag('wlan_show_drivers')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show drivers</button>
+                                            <button onclick="dispatchNetDiag('wlan_disconnect')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors truncate whitespace-normal" title="Destructive: Disconnect from Wi-Fi">disconnect</button>
+                                            <button onclick="dispatchNetDiag('wlan_show_all')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal">show all</button>
+                                            <button onclick="dispatchNetDiag('wlan_export')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors truncate whitespace-normal">export profile</button>
+                                            <button onclick="dispatchNetDiag('wlan_ps_adapters')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-success rounded text-[10px] font-mono transition-colors col-span-2 truncate whitespace-normal">Get-NetAdapter (Wi-Fi)</button>
+                                            <button onclick="dispatchNetDiag('mega_wlan_bounce')" class="px-2 py-1.5 bg-mosp-success/20 border border-mosp-success text-mosp-success font-bold hover:bg-mosp-success hover:text-black rounded text-[10px] transition-colors col-span-2 truncate whitespace-normal">Mega Wi-Fi Interface Bounce</button>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Routing & Sessions (Legacy Catch-All Block) -->
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-gray-500 bg-black/20">
+                                        <h5 class="text-white font-bold text-xs mb-3 uppercase tracking-widest"><i class="ph ph-map-trifold mr-1"></i> Routes, ARP & Sessions</h5>
+                                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                                            <button onclick="dispatchNetDiag('route_print')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] sm:text-xs font-mono transition-colors truncate">route print</button>
+                                            <button onclick="dispatchNetDiag('arp_a')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] sm:text-xs font-mono transition-colors truncate">arp -a</button>
+                                            <button onclick="dispatchNetDiag('qwinsta')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-gray-400 rounded text-[10px] sm:text-xs font-mono transition-colors truncate">qwinsta</button>
+                                            <button onclick="dispatchNetDiag('arp_d')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] sm:text-xs font-mono transition-colors truncate" title="Destructive: Flush ARP">arp -d *</button>
+                                        </div>
+                                        <div class="flex space-x-2">
+                                            <input type="text" id="diag-route-del" placeholder="Route / Session ID" class="flex-1 bg-mosp-bg border border-mosp-border rounded px-2 py-1 text-xs text-white outline-none focus:border-gray-400 font-mono">
+                                            <button onclick="dispatchTargetedDiag('route_delete', 'diag-route-del')" class="px-3 py-1 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-xs transition-colors font-mono truncate">route delete</button>
+                                            <button onclick="dispatchTargetedDiag('rwinsta', 'diag-route-del')" class="px-3 py-1 bg-mosp-warning/10 border border-mosp-warning/50 text-mosp-warning hover:bg-mosp-warning hover:text-black rounded text-xs transition-colors font-mono truncate">rwinsta (Logoff)</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Live Output Console -->
+                                <div class="glass-panel rounded border border-mosp-border flex flex-col h-[600px]">
+                                    <div class="p-3 border-b border-mosp-border bg-mosp-panel/50 flex justify-between items-center">
+                                        <span class="text-xs font-bold text-mosp-accent uppercase tracking-widest"><i class="ph ph-terminal-window mr-1"></i> Diagnostic Execution Stream</span>
+                                        <button onclick="document.getElementById('diag-output-console').innerHTML='<span class=\'text-gray-600\'>Select a diagnostic macro from the left to execute...</span>'" class="text-[10px] text-gray-500 hover:text-white"><i class="ph ph-trash"></i> Clear</button>
+                                    </div>
+                                    <div id="diag-output-console" class="flex-1 bg-[#05070a] p-4 overflow-y-auto font-mono text-[10px] sm:text-xs text-gray-300 whitespace-pre-wrap break-words custom-scrollbar shadow-inner">
+                                        <span class="text-gray-600">Select a diagnostic macro from the left to execute...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- IT Tools Tab (NEW) -->
+                        <div id="tab-it-tools" class="tab-content">
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 space-y-3 sm:space-y-0">
+                                <h4 class="text-white font-semibold flex items-center text-sm sm:text-base"><i class="ph ph-wrench text-mosp-accent mr-2"></i> Physical Hardware & 3rd Party Tools</h4>
+                            </div>
+
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full">
+                                <div class="space-y-4 pr-2 overflow-y-auto h-[600px] pb-10 custom-scrollbar">
+
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-gray-500 bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-cpu mr-1"></i> Hardware Reference Guide</h5>
+                                        </div>
+                                        <p class="text-[10px] text-gray-400 mb-2">Use this matrix to identify and isolate physical component failures before dispatching a technician.</p>
+                                        <ul class="text-[10px] text-gray-300 space-y-2 font-mono">
+                                            <li><strong class="text-mosp-accent">Power:</strong> Inspect PSU, wall sockets, AC adapters, 24-pin/EPS connections, and motherboard capacitors (bulging/burns).</li>
+                                            <li><strong class="text-mosp-secondary">Storage:</strong> Verify NVMe/SATA connections, check boot partitions (GPT/MBR), test with external USB drives.</li>
+                                            <li><strong class="text-mosp-purple">Memory:</strong> Check DDR generation compatibility, RAM clock frequencies, slot pairing, and POST beep codes.</li>
+                                            <li><strong class="text-mosp-warning">Thermals:</strong> Monitor CPU/GPU cooling fans, liquid cooler pumps, thermal paste integrity, and fan curves.</li>
+                                            <li><strong class="text-mosp-danger">Motherboard:</strong> Inspect standoffs, replace CMOS battery (CR2032), verify PCIe slots, update BIOS/UEFI.</li>
+                                            <li><strong class="text-mosp-success">Peripherals:</strong> Test dedicated/iGPUs, swap display cables (HDMI/DP), check NICs, audio jacks, and powered USB hubs.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div class="glass-panel p-4 rounded border-l-2 border-l-mosp-purple bg-black/20">
+                                        <div class="flex justify-between items-center mb-3">
+                                            <h5 class="text-white font-bold text-xs uppercase tracking-widest"><i class="ph ph-hammer mr-1"></i> Sysinternals & Enterprise Tools</h5>
+                                            <span class="px-2 py-0.5 bg-mosp-purple/20 text-mosp-purple border border-mosp-purple/50 rounded text-[9px] font-bold uppercase tracking-wider">7 Modules</span>
+                                        </div>
+                                        <p class="text-[10px] text-gray-500 mb-3">These commands assume the tools are extracted to <code class="bg-black/50 px-1 rounded text-mosp-accent">C:\Sysinternals</code> or <code class="bg-black/50 px-1 rounded text-mosp-accent">Program Files</code>.</p>
+                                        
+                                        <div class="flex space-x-2 mb-3 bg-mosp-panel/50 p-2 rounded border border-mosp-border">
+                                            <i class="ph ph-target text-gray-500 mt-1.5 ml-1"></i>
+                                            <input type="text" id="diag-tool-target" placeholder="Target User, File, or Service" class="flex-1 bg-transparent border-none text-xs text-white outline-none font-mono placeholder-gray-600">
+                                        </div>
+
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4">
+                                            <button onclick="dispatchNetDiag('exe_procexp', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Process Explorer (procexp.exe)">Process Explorer</button>
+                                            <button onclick="dispatchNetDiag('exe_procmon', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Process Monitor (procmon.exe)">Process Monitor</button>
+                                            <button onclick="dispatchNetDiag('exe_autoruns', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Autoruns (autoruns.exe)">Autoruns</button>
+                                            <button onclick="dispatchNetDiag('exe_tcpview', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="TCPView (tcpview.exe)">TCPView</button>
+                                            <button onclick="dispatchTargetedDiag('exe_accesschk', 'diag-tool-target', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="AccessChk (accesschk.exe)">AccessChk</button>
+                                            <button onclick="dispatchTargetedDiag('exe_psexec', 'diag-tool-target', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="PsExec (psexec.exe)">PsExec</button>
+                                            <button onclick="dispatchNetDiag('exe_wireshark', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-purple rounded text-[10px] font-mono transition-colors truncate whitespace-normal col-span-2 sm:col-span-3" title="Wireshark">Launch Wireshark</button>
+                                        </div>
+
+                                        <h6 class="text-[10px] font-bold text-gray-500 mb-2 uppercase tracking-widest border-t border-mosp-border/50 pt-2">Hardware, Thermal & Crash Diagnostics</h6>
+                                        <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                            <button onclick="dispatchNetDiag('exe_hwmonitor', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="HWMonitor / Speccy / Core Temp">HWMonitor</button>
+                                            <button onclick="dispatchNetDiag('exe_hwinfo', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="HWiNFO">HWiNFO</button>
+                                            <button onclick="dispatchNetDiag('exe_crystaldisk', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="CrystalDiskInfo / SeaTools">CrystalDiskInfo</button>
+                                            <button onclick="dispatchNetDiag('exe_memtest', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="MemTest86">MemTest86</button>
+                                            <button onclick="dispatchNetDiag('exe_furmark', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-warning rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="FurMark / Prime95">FurMark / Prime95</button>
+                                            <button onclick="dispatchNetDiag('exe_bluescreenview', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="BlueScreenView">BlueScreenView</button>
+                                            <button onclick="dispatchNetDiag('exe_windbg', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-secondary rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="WinDbg">WinDbg</button>
+                                            <button onclick="dispatchNetDiag('exe_malwarebytes', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white hover:border-mosp-danger rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Malwarebytes / Defender Offline">Malwarebytes</button>
+                                            <button onclick="dispatchNetDiag('mega_boot_oem_diag', 'tool-output-console')" class="px-2 py-1.5 bg-mosp-danger/10 border border-mosp-danger text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-mono transition-colors truncate whitespace-normal" title="Reboot to OEM Diagnostics (F12/F10)">Reboot to OEM Diag</button>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                                <!-- Live Output Console (Shared with Net Diag) -->
+                                <div class="glass-panel rounded border border-mosp-border flex flex-col h-[600px]">
+                                    <div class="p-3 border-b border-mosp-border bg-mosp-panel/50 flex justify-between items-center">
+                                        <span class="text-xs font-bold text-mosp-accent uppercase tracking-widest"><i class="ph ph-terminal-window mr-1"></i> Tool Execution Stream</span>
+                                        <button onclick="document.getElementById('tool-output-console').innerHTML='<span class=\'text-gray-600\'>Select a tool or macro from the left to execute...</span>'" class="text-[10px] text-gray-500 hover:text-white"><i class="ph ph-trash"></i> Clear</button>
+                                    </div>
+                                    <div id="tool-output-console" class="flex-1 bg-[#05070a] p-4 overflow-y-auto font-mono text-[10px] sm:text-xs text-gray-300 whitespace-pre-wrap break-words custom-scrollbar shadow-inner">
+                                        <span class="text-gray-600">Select a tool or macro from the left to execute...</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1734,6 +2425,110 @@
             </div>
 
             <!-- ========================================= -->
+            <!-- VIEW: ENDPOINT CONFIGURATION (CLOUD GPO)  -->
+            <!-- ========================================= -->
+            <div id="view-gpo" class="view-section hidden space-y-4 sm:space-y-6">
+                <div class="flex justify-between items-end mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-white">Endpoint Configuration Engine</h2>
+                        <p class="text-sm text-gray-400">Cloud-native Group Policy (GPO) equivalent for Registry enforcement and Startup Scripts.</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button onclick="fetchGpoProfiles()" class="px-4 py-2 bg-mosp-panel border border-mosp-border text-gray-300 rounded hover:text-white transition-colors text-sm flex items-center"><i class="ph ph-arrows-clockwise mr-2"></i> Refresh</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Create Profile Panel -->
+                    <div class="glass-panel rounded-lg p-6 lg:col-span-1 border-t-4 border-t-mosp-accent h-fit">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-6 flex items-center"><i class="ph ph-plus-circle mr-2 text-mosp-accent text-lg"></i> Create Configuration Profile</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Profile Name</label>
+                                <input type="text" id="gpo-name" placeholder="e.g., Disable USB Storage" class="w-full bg-mosp-bg border border-mosp-border rounded px-3 py-2 text-sm text-white outline-none focus:border-mosp-accent">
+                            </div>
+                            
+                            <!-- Policy Type Selector -->
+                            <div>
+                                <label class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">Policy Type</label>
+                                <select id="gpo-type-select" onchange="toggleGpoBuilder()" class="w-full bg-mosp-bg border border-mosp-border rounded px-3 py-2 text-sm text-white outline-none focus:border-mosp-accent">
+                                    <option value="registry">Administrative Template (Registry)</option>
+                                    <option value="software">Software Installation (.MSI / .EXE)</option>
+                                    <option value="gpp">GPP (File / Folder Creation)</option>
+                                </select>
+                            </div>
+
+                            <!-- Registry Builder (Existing, now wrapped) -->
+                            <div id="builder-registry" class="p-3 bg-black/30 border border-mosp-border rounded space-y-3 block">
+                                <h4 class="text-xs font-bold text-gray-300 flex items-center"><i class="ph ph-tree-structure mr-1 text-mosp-secondary"></i> Registry Policy (ADMX)</h4>
+                                <input type="text" id="gpo-reg-path" placeholder="Path (e.g., HKLM:\SYSTEM\CurrentControlSet\Services\USBSTOR)" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white font-mono">
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="text" id="gpo-reg-name" placeholder="Key Name (e.g., Start)" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white font-mono">
+                                    <input type="text" id="gpo-reg-value" placeholder="Value (e.g., 4)" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white font-mono">
+                                </div>
+                                <select id="gpo-reg-type" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white">
+                                    <option value="DWord">DWord (Integer)</option>
+                                    <option value="String">String (Text)</option>
+                                </select>
+                            </div>
+
+                            <!-- Software Builder (NEW) -->
+                            <div id="builder-software" class="p-3 bg-black/30 border border-mosp-border rounded space-y-3 hidden">
+                                <h4 class="text-xs font-bold text-gray-300 flex items-center"><i class="ph ph-app-window mr-1 text-mosp-accent"></i> Software Installation</h4>
+                                <input type="text" id="gpo-sw-name" placeholder="Application Name (e.g., Chrome Enterprise)" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white font-mono">
+                                <input type="text" id="gpo-sw-url" placeholder="Download URL (.msi or .exe)" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white font-mono">
+                                <input type="text" id="gpo-sw-args" placeholder="Silent Args (Default: /quiet /norestart)" value="/quiet /norestart" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white font-mono">
+                            </div>
+
+                            <!-- GPP Builder (NEW) -->
+                            <div id="builder-gpp" class="p-3 bg-black/30 border border-mosp-border rounded space-y-3 hidden">
+                                <h4 class="text-xs font-bold text-gray-300 flex items-center"><i class="ph ph-folder-plus mr-1 text-mosp-warning"></i> Group Policy Preferences (Files/Folders)</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <select id="gpo-gpp-action" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white">
+                                        <option value="Create">Create / Update</option>
+                                        <option value="Delete">Delete</option>
+                                    </select>
+                                    <select id="gpo-gpp-type" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white">
+                                        <option value="Folder">Folder Directory</option>
+                                        <option value="File">Specific File</option>
+                                    </select>
+                                </div>
+                                <input type="text" id="gpo-gpp-dest" placeholder="Target Destination (e.g., C:\Enterprise\Logs)" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white font-mono">
+                                <input type="text" id="gpo-gpp-src" placeholder="Source URL (Required if Type = File)" class="w-full bg-mosp-bg border border-mosp-border rounded px-2 py-1.5 text-xs text-white font-mono">
+                            </div>
+
+                            <button onclick="submitGpoProfile()" id="btn-submit-gpo" class="w-full px-4 py-3 bg-mosp-accent/20 hover:bg-mosp-accent text-mosp-accent hover:text-black border border-mosp-accent font-bold rounded transition-colors flex items-center justify-center text-sm">
+                                Deploy Policy to Fleet
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Active Profiles List -->
+                    <div class="glass-panel rounded-lg lg:col-span-2 flex flex-col overflow-hidden">
+                        <div class="p-4 border-b border-mosp-border bg-mosp-panel/50">
+                            <h3 class="text-sm font-semibold text-white uppercase tracking-widest flex items-center"><i class="ph ph-list-dashes mr-2 text-mosp-secondary"></i> Active Fleet Profiles</h3>
+                        </div>
+                        <div class="flex-1 overflow-x-auto p-0">
+                            <table class="w-full text-left text-sm mosp-table">
+                                <thead class="bg-mosp-panel text-gray-400 text-xs">
+                                    <tr>
+                                        <th class="px-6 py-3">Profile ID / Name</th>
+                                        <th class="px-6 py-3">Registry Path Target</th>
+                                        <th class="px-6 py-3">Key Value Enforced</th>
+                                        <th class="px-6 py-3 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="gpo-list-body" class="divide-y divide-mosp-border/50 text-gray-300">
+                                    <tr><td colspan="4" class="text-center py-12 text-gray-500 italic">No configuration profiles deployed.</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ========================================= -->
             <!-- VIEW: SYSTEM ADMINISTRATION               -->
             <!-- ========================================= -->
             <div id="view-admin" class="view-section hidden space-y-3">
@@ -1806,17 +2601,25 @@
 
                         <!-- Tab: Agent Management -->
                         <div id="tab-admin-agents" class="admin-content hidden space-y-4">
-                            <div class="flex justify-between items-center mb-4">
-                                <h3 class="text-white font-bold">Deployed Agents Overview</h3>
-                                <div class="flex space-x-2">
-                                    <button onclick="promptWakeOnLan()" class="px-3 py-1.5 bg-mosp-warning/20 border border-mosp-warning text-mosp-warning hover:bg-mosp-warning hover:text-black rounded transition-colors text-xs font-bold"><i class="ph ph-lightning mr-1"></i> Send Magic Packet (WOL)</button>
-                                    <button onclick="promptEditAgentConfig('broadcast')" class="px-3 py-1.5 bg-mosp-purple/20 border border-mosp-purple text-mosp-purple hover:bg-mosp-purple hover:text-white rounded transition-colors text-xs font-bold"><i class="ph ph-code mr-1"></i> Edit JSON Config</button>
-                                    <button onclick="downloadAgentBinary()" class="px-3 py-1.5 bg-mosp-secondary/20 border border-mosp-secondary text-mosp-secondary hover:bg-mosp-secondary hover:text-black rounded transition-colors text-xs font-bold shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-4">
+                                <h3 class="text-white font-bold whitespace-nowrap">Deployed Agents Overview</h3>
+                                <div class="flex flex-wrap gap-2">
+                                    <button onclick="promptWakeOnLan()" class="px-3 py-1.5 bg-mosp-warning/20 border border-mosp-warning text-mosp-warning hover:bg-mosp-warning hover:text-black rounded transition-colors text-xs font-bold whitespace-nowrap">
+                                        <i class="ph ph-lightning mr-1"></i> Send Magic Packet (WOL)
+                                    </button>
+                                    <button onclick="promptEditAgentConfig('broadcast')" class="px-3 py-1.5 bg-mosp-purple/20 border border-mosp-purple text-mosp-purple hover:bg-mosp-purple hover:text-white rounded transition-colors text-xs font-bold whitespace-nowrap">
+                                        <i class="ph ph-code mr-1"></i> Edit JSON Config
+                                    </button>
+                                    <button onclick="downloadAgentBinary()" class="px-3 py-1.5 bg-mosp-secondary/20 border border-mosp-secondary text-mosp-secondary hover:bg-mosp-secondary hover:text-black rounded transition-colors text-xs font-bold shadow-[0_0_10px_rgba(59,130,246,0.1)] whitespace-nowrap">
                                         <i class="ph ph-download-simple mr-1"></i> Download Installer
+                                    </button>
+                                    <!-- Modified Button to download raw PS1 for Zero-Touch Provisioning -->
+                                    <button onclick="downloadZTPScript()" class="px-3 py-1.5 bg-mosp-secondary/20 border border-mosp-secondary text-mosp-secondary hover:bg-mosp-secondary hover:text-black rounded transition-colors text-xs font-bold shadow-[0_0_10px_rgba(59,130,246,0.1)] whitespace-nowrap">
+                                        <i class="ph ph-terminal-window mr-1"></i> Download ZTP Script (.ps1)
                                     </button>
                                 </div>
                             </div>
-                            <div class="overflow-x-auto border border-mosp-border rounded">
+                            <div class="overflow-x-auto border border-mosp-border rounded w-full">
                                 <table class="w-full text-left text-sm mosp-table">
                                     <thead class="bg-mosp-panel/80 text-gray-400 text-xs uppercase tracking-wider font-semibold">
                                         <tr>
@@ -2266,7 +3069,7 @@
                 'reports': '<i class="ph ph-chart-bar text-mosp-secondary mr-2 hidden sm:block"></i> Reports & Analytics',
                 'admin': '<i class="ph ph-gear text-mosp-secondary mr-2 hidden sm:block"></i> System Administration'
             };
-            document.getElementById('header-title').innerHTML = headerTitles[targetViewId] || 'M-OSP Module';
+            document.getElementById('header-title').innerHTML = headerTitles[targetViewId] || 'M-OSP Group Policy';
 
             document.querySelectorAll('.nav-link').forEach(el => {
                 el.classList.remove('bg-mosp-accent/10', 'text-mosp-accent', 'border-mosp-accent');
@@ -2295,6 +3098,115 @@
             const toggle = () => { sidebar.classList.toggle('hidden'); sidebar.classList.toggle('absolute'); };
             btn.addEventListener('click', toggle);
             closeBtn.addEventListener('click', toggle);
+        }
+
+        // Add the logic functions:
+        async function fetchGpoProfiles() {
+            const tbody = document.getElementById('gpo-list-body');
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center py-12 text-gray-500"><i class="ph ph-spinner animate-spin text-2xl mb-2 text-mosp-accent"></i><br>Syncing Profiles...</td></tr>';
+            try {
+                const res = await fetch(`${API_BASE_URL}/gpo/profiles`, { headers: FETCH_HEADERS });
+                if(res.ok) {
+                    const profiles = await res.json();
+                    tbody.innerHTML = '';
+                    if(profiles.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-12 text-gray-500 italic">No configuration profiles deployed.</td></tr>';
+                        return;
+                    }
+                    profiles.forEach(p => {
+                        // Extract first registry policy for display
+                        const reg = p.registry_policies && p.registry_policies.length > 0 ? p.registry_policies[0] : null;
+                        const targetPath = reg ? `<span class="font-mono text-[10px] text-gray-400 block truncate max-w-xs" title="${reg.path}">${reg.path}</span>` : '<span class="text-gray-600">--</span>';
+                        const targetVal = reg ? `<span class="font-mono text-mosp-secondary">${reg.name} = ${reg.value}</span>` : '<span class="text-gray-600">--</span>';
+                        
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="px-6 py-3">
+                                    <span class="text-white font-bold text-sm block">${p.name}</span>
+                                    <span class="text-[10px] text-gray-500 font-mono">${p.id}</span>
+                                </td>
+                                <td class="px-6 py-3">${targetPath}</td>
+                                <td class="px-6 py-3 text-xs">${targetVal}</td>
+                                <td class="px-6 py-3 text-right"><span class="px-2 py-0.5 bg-mosp-success/20 text-mosp-success border border-mosp-success/50 rounded text-[10px] font-bold uppercase">Enforced</span></td>
+                            </tr>
+                        `;
+                    });
+                }
+            } catch (e) {
+                console.error("GPO fetch failed", e);
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center py-12 text-mosp-danger">Failed to fetch Configuration Profiles.</td></tr>';
+            }
+        }
+
+        function toggleGpoBuilder() {
+            const type = document.getElementById('gpo-type-select').value;
+            document.getElementById('builder-registry').classList.add('hidden');
+            document.getElementById('builder-software').classList.add('hidden');
+            document.getElementById('builder-gpp').classList.add('hidden');
+            
+            if(type === 'registry') document.getElementById('builder-registry').classList.remove('hidden');
+            if(type === 'software') document.getElementById('builder-software').classList.remove('hidden');
+            if(type === 'gpp') document.getElementById('builder-gpp').classList.remove('hidden');
+        }
+
+        async function submitGpoProfile() {
+            const name = document.getElementById('gpo-name').value;
+            const type = document.getElementById('gpo-type-select').value;
+
+            if(!name) { alert("Please provide a Profile Name."); return; }
+
+            const payload = {
+                name: name,
+                description: "Deployed via Web Dashboard",
+                target_assets: ["global"],
+                registry_policies: [],
+                software_policies: [],
+                file_folder_policies: []
+            };
+
+            if (type === 'registry') {
+                const path = document.getElementById('gpo-reg-path').value;
+                const keyName = document.getElementById('gpo-reg-name').value;
+                const val = document.getElementById('gpo-reg-value').value;
+                const rType = document.getElementById('gpo-reg-type').value;
+                if(!path || !keyName || !val) { alert("Complete all registry fields."); return; }
+                payload.registry_policies.push({ path: path, name: keyName, value: val, type: rType });
+            } 
+            else if (type === 'software') {
+                const swName = document.getElementById('gpo-sw-name').value;
+                const swUrl = document.getElementById('gpo-sw-url').value;
+                const swArgs = document.getElementById('gpo-sw-args').value;
+                if(!swName || !swUrl) { alert("Complete software name and URL."); return; }
+                payload.software_policies.push({ name: swName, download_url: swUrl, install_args: swArgs });
+            }
+            else if (type === 'gpp') {
+                const action = document.getElementById('gpo-gpp-action').value;
+                const itemType = document.getElementById('gpo-gpp-type').value;
+                const dest = document.getElementById('gpo-gpp-dest').value;
+                const src = document.getElementById('gpo-gpp-src').value;
+                if(!dest || (itemType === 'File' && action !== 'Delete' && !src)) { alert("Provide valid destination and source paths."); return; }
+                payload.file_folder_policies.push({ action: action, item_type: itemType, destination_path: dest, source_path: src });
+            }
+
+            const btn = document.getElementById('btn-submit-gpo');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> Deploying...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/gpo/profiles`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify(payload)
+                });
+                if(res.ok) {
+                    // Clear base field
+                    document.getElementById('gpo-name').value = '';
+                    await fetchGpoProfiles();
+                } else {
+                    alert("Failed to deploy profile.");
+                }
+            } catch(e) { console.error(e); }
+            finally { btn.innerHTML = originalText; }
         }
 
         // --- DASHBOARD DATA ENGINE ---
@@ -2699,6 +3611,23 @@
                     return [`<span class="text-white">${s.display_name}</span>`, `<span class="font-mono text-xs">${s.name}</span>`, `<span class="${color} font-bold">${s.status}</span>`, s.start_type, actionBtn];
                 }, 
                 "No service telemetry available.");
+
+            // Add this block where the other `populateTable` calls are:
+            populateTable('det-shares-list', asset.network_shares, 
+                s => {
+                    let riskBadge = '<span class="text-gray-500">Standard</span>';
+                    // Flag administrative hidden shares
+                    if (s.name.endsWith('$')) {
+                        riskBadge = '<span class="px-2 py-0.5 bg-mosp-danger/20 text-mosp-danger border border-mosp-danger/50 rounded text-[9px] uppercase tracking-wider">High Risk (Admin Share)</span>';
+                    }
+                    return [
+                        `<span class="text-white font-bold">${s.name}</span>`, 
+                        `<span class="font-mono text-xs text-mosp-secondary">${s.path}</span>`, 
+                        s.description || '-', 
+                        riskBadge
+                    ];
+                }, 
+                "No active network shares detected on this endpoint.");
 
              populateTable('det-usb-list', asset.usb_devices, 
                 u => {
@@ -3278,10 +4207,59 @@
                     <td class="px-6 py-4 ${sevColor}">${patch.severity}</td>
                     <td class="px-6 py-4 text-xs flex items-center mt-1">${typeBadge} ${patch.os_family}</td>
                     <td class="px-6 py-4">${rebootStr}</td>
-                    <td class="px-6 py-4 text-right font-mono font-bold text-white"><span class="px-2 py-1 bg-white/10 rounded">${patch.affectedAssets.length} Nodes</span></td>
+                    <td class="px-6 py-4 text-right flex justify-end space-x-2 items-center h-full pt-3">
+                        <span class="px-2 py-1 bg-white/10 rounded font-mono font-bold text-white text-xs">${patch.affectedAssets.length} Nodes</span>
+                        <button onclick="approvePatchGlobally(event, '${patch.kb_article}')" class="px-2 py-1 bg-mosp-success/10 border border-mosp-success/50 text-mosp-success hover:bg-mosp-success hover:text-black rounded text-[10px] transition-colors" title="Add to Global WSUS Baseline"><i class="ph ph-check-square-offset"></i> Baseline</button>
+                    </td>
                 `;
                  tbody.appendChild(tr);
             });
+        }
+
+        // Add the JS logic functions:
+        async function downloadZTPScript() {
+            try {
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = `${API_BASE_URL}/admin/agent/ztp.ps1?tenant_id=${encodeURIComponent(TENANT_ID)}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(a.href);
+                document.body.removeChild(a);
+            } catch (err) {
+                console.error("Failed to download ZTP script:", err);
+                alert("ZTP generation service unavailable.");
+            }
+        }
+
+        async function approvePatchGlobally(e, kbArticle) {
+            if(!confirm(`Add ${kbArticle} to the Global Patch Baseline? All vulnerable endpoints will automatically download and install this update on their next cycle.`)) return;
+            
+            const btn = e.currentTarget;
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin"></i>';
+            
+            try {
+                const payload = { kb_article: kbArticle, approved_by: USER_ID };
+                const res = await fetch(`${API_BASE_URL}/patches/global-approve`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify(payload)
+                });
+                
+                if (res.ok) {
+                    btn.innerHTML = '<i class="ph ph-check"></i> Approved';
+                    btn.classList.replace('bg-mosp-success/10', 'bg-mosp-success');
+                    btn.classList.replace('text-mosp-success', 'text-black');
+                    btn.disabled = true;
+                } else {
+                    alert("Failed to baseline patch.");
+                    btn.innerHTML = originalHTML;
+                }
+            } catch (err) {
+                console.error(err);
+                btn.innerHTML = originalHTML;
+            }
         }
 
         function renderInstalledPatches(assets) {
@@ -5885,6 +6863,202 @@
                 alert("Agent binary is not currently available on the server.");
             }
         }
+
+        async function retrieveLapsPassword() {
+            if (!activeAssetIdForDetail) return;
+            
+            try {
+                // 1. Fetch current credential
+                const res = await fetch(`${API_BASE_URL}/endpoints/${activeAssetIdForDetail}/laps`, { headers: FETCH_HEADERS });
+                
+                if (res.ok) {
+                    const cred = await res.json();
+                    const dt = new Date(cred.expires_at).toLocaleString();
+                    
+                    const action = prompt(
+                        `Cloud LAPS Vault (Audited Action)\n\nAccount: ${cred.admin_username}\nPassword: ${cred.current_password}\nExpires: ${dt}\n\nType 'ROTATE' to force a password change immediately, or click Cancel to close.`
+                    );
+                    
+                    if (action && action.toUpperCase() === 'ROTATE') {
+                        forceLapsRotation();
+                    }
+                } else {
+                    const force = confirm("No LAPS credential found for this endpoint. Would you like to issue a force-rotation command to generate one?");
+                    if (force) forceLapsRotation();
+                }
+            } catch (e) {
+                console.error("LAPS Error:", e);
+                alert("Network error communicating with Cloud LAPS vault.");
+            }
+        }
+
+        async function forceLapsRotation() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/endpoints/${activeAssetIdForDetail}/laps/rotate`, { method: 'POST', headers: FETCH_HEADERS });
+                if (res.ok) {
+                    alert("Rotation command dispatched to endpoint. The new credential will be vaulted within 60 seconds.");
+                } else {
+                    alert("Failed to dispatch LAPS rotation command.");
+                }
+            } catch(e) { console.error(e); }
+        }
+
+        function dispatchSmbHardening() {
+             if (!activeAssetIdForDetail) return;
+             if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) { alert("WebSocket is not connected."); return; }
+             
+             if(!confirm("This will disable SMBv1 and enforce SMB encryption. Legacy NAS or printers may lose connectivity. Proceed?")) return;
+             
+             const payload = {
+                 type: "harden_smb",
+                 task_id: "smb_" + Math.random().toString(36).substr(2, 9),
+                 target_asset_id: activeAssetIdForDetail,
+                 data: {}
+             };
+             
+             wsConnection.send(JSON.stringify(payload));
+             openRemoteTerminal();
+             document.getElementById('terminal-output').innerHTML += `\n<div class="text-mosp-warning mt-2"><i class="ph ph-shield-check mr-1"></i> Dispatched SMB hardening routines...</div>`;
+        }
+        
+         // --- NETWORK DIAGNOSTIC MACROS ---
+        
+        function dispatchNetDiag(tool, consoleId = 'diag-output-console') {
+            if (!activeAssetIdForDetail) return;
+            if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) { alert("WebSocket is not connected."); return; }
+            
+            // Protection for destructive actions
+            const destructive = [
+                'ipconfig_release', 'ipconfig_release6', 'winsock_reset', 'winsock_reset_catalog', 
+                'winsock_reset_ipv4', 'winsock_reset_ipv6', 'mega_winsock_hard_rebuild', 
+                'tcpip_reset', 'tcpip_reset_tcp', 'tcpip_delete_arp', 'tcpip_set_heuristics', 
+                'mega_tcpip_flush_all', 'arp_d', 'fw_off_all', 'fw_block_inbound', 
+                'fw_reset', 'wlan_disconnect', 'mega_wlan_bounce', 
+                'mega_ipconfig_deep_renew', 'mega_dns_repair_stack', 'mega_dhcp_force_restart', 'mega_ipv6_purge',
+                'vssadmin_delete', 'mega_disk_repair_chain', 'cipher_wipe', 'mega_spooler_reset',
+                'clear_minidumps', 'clear_memory_dmp', 'bcdedit_safemode_minimal', 'bcdedit_safemode_network', 
+                'bcdedit_safemode_cmd', 'reagentc_boottore', 'mega_boot_oem_diag'
+            ];
+            
+            if (destructive.includes(tool)) {
+                if(!confirm(`WARNING: Executing '${tool}' alters the system stack or modifies configurations. Proceed?`)) return;
+            }
+
+            const taskId = `diag_net_${Math.random().toString(36).substr(2, 8)}`;
+            const payload = {
+                type: "network_diagnostic",
+                task_id: taskId,
+                target_asset_id: activeAssetIdForDetail,
+                data: { tool: tool }
+            };
+            
+            wsConnection.send(JSON.stringify(payload));
+            
+            const out = document.getElementById(consoleId);
+            if (out && out.innerHTML.includes("Select a tool or macro")) out.innerHTML = "";
+            if (out && out.innerHTML.includes("Select a diagnostic macro")) out.innerHTML = "";
+            
+            if (out) {
+                out.innerHTML += `\n<div class="text-mosp-accent mt-3 mb-1 bg-mosp-accent/10 border-l-2 border-mosp-accent pl-2 py-0.5"><i class="ph ph-caret-right"></i> Dispatched: <strong>${tool.toUpperCase()}</strong></div>`;
+                out.innerHTML += `<div id="loader-${taskId}" class="text-gray-500 pl-3 border-l border-gray-600/50 py-1 text-xs animate-pulse"><i class="ph ph-spinner animate-spin mr-1"></i> Awaiting telemetry from endpoint...</div>`;
+                out.scrollTop = out.scrollHeight;
+            }
+        }
+
+        function dispatchTargetedDiag(tool, inputId, consoleId = 'diag-output-console') {
+            const targetEl = document.getElementById(inputId);
+            const targetVal = targetEl ? targetEl.value.trim() : "";
+            
+            if (!targetVal && tool !== 'mega_ping_gateway' && tool !== 'mega_ping_dns' && tool !== 'exe_accesschk' && tool !== 'exe_psexec') { 
+                alert(`Target requirement missing for ${tool}.`); 
+                return; 
+            }
+            
+            // Protect CHKDSK /R
+            if (tool === 'chkdsk_repair') {
+                if(!confirm(`WARNING: Running CHKDSK with repair flags on an active drive may force a reboot or unmount the volume. Proceed?`)) return;
+            }
+            
+            if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) { alert("WebSocket is not connected."); return; }
+
+            const taskId = `diag_net_${Math.random().toString(36).substr(2, 8)}`;
+            const payload = {
+                type: "network_diagnostic",
+                task_id: taskId,
+                target_asset_id: activeAssetIdForDetail,
+                data: { tool: tool, target: targetVal }
+            };
+            
+            wsConnection.send(JSON.stringify(payload));
+            
+            const out = document.getElementById(consoleId);
+            if (out && out.innerHTML.includes("Select a tool or macro")) out.innerHTML = "";
+            if (out && out.innerHTML.includes("Select a diagnostic macro")) out.innerHTML = "";
+            
+            if (out) {
+                out.innerHTML += `\n<div class="text-mosp-accent mt-3 mb-1 bg-mosp-accent/10 border-l-2 border-mosp-accent pl-2 py-0.5"><i class="ph ph-caret-right"></i> Dispatched: <strong>${tool.toUpperCase()}</strong> against ${targetVal}</div>`;
+                out.innerHTML += `<div id="loader-${taskId}" class="text-gray-500 pl-3 border-l border-gray-600/50 py-1 text-xs animate-pulse"><i class="ph ph-spinner animate-spin mr-1"></i> Awaiting telemetry from endpoint...</div>`;
+                out.scrollTop = out.scrollHeight;
+            }
+        }
+
+        function dispatchPortTest() {
+            const targetVal = document.getElementById('diag-port-target').value.trim();
+            const portVal = document.getElementById('diag-port-num').value.trim();
+            
+            if (!targetVal || !portVal) { alert("Both IP/Host and Port are required."); return; }
+            if (!wsConnection || wsConnection.readyState !== WebSocket.OPEN) return;
+
+            const taskId = `diag_net_${Math.random().toString(36).substr(2, 8)}`;
+            const payload = {
+                type: "network_diagnostic",
+                task_id: taskId,
+                target_asset_id: activeAssetIdForDetail,
+                data: { tool: "test_netconn", target: targetVal, port: portVal }
+            };
+            
+            wsConnection.send(JSON.stringify(payload));
+            
+            const out = document.getElementById('diag-output-console');
+            if (out.innerHTML.includes("Select a diagnostic macro")) out.innerHTML = "";
+            out.innerHTML += `\n<div class="text-mosp-purple mt-3 mb-1 bg-mosp-purple/10 border-l-2 border-mosp-purple pl-2 py-0.5"><i class="ph ph-caret-right"></i> Dispatched: <strong>Test-NetConnection</strong> [${targetVal}:${portVal}]</div>`;
+            out.innerHTML += `<div id="loader-${taskId}" class="text-gray-500 pl-3 border-l border-gray-600/50 py-1 text-xs animate-pulse"><i class="ph ph-spinner animate-spin mr-1"></i> Awaiting telemetry from endpoint...</div>`;
+            out.scrollTop = out.scrollHeight;
+        }
+
+        // Intercept function for `appendTerminalOutput` to reroute Diagnostic streams
+        const originalAppendTerminalOutput = appendTerminalOutput;
+        appendTerminalOutput = function(payload) {
+            // Check if this is a specialized Network Diagnostic return
+            if (payload.task_id && payload.task_id.startsWith('diag_net_')) {
+                const diagOut = document.getElementById('diag-output-console');
+                const toolOut = document.getElementById('tool-output-console');
+                
+                const processOutput = (outElem) => {
+                    if (!outElem) return;
+                    const loader = document.getElementById(`loader-${payload.task_id}`);
+                    if (loader) loader.remove();
+                    
+                    let outputText = payload.output || "Execution finished with no standard output.";
+                    outputText = outputText.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>");
+                    
+                    const colorClass = payload.success ? "text-gray-300" : "text-mosp-danger";
+                    const iconHTML = payload.success ? "" : '<i class="ph ph-warning-octagon mr-1"></i>';
+                    
+                    outElem.innerHTML += `<div class="${colorClass} pl-3 border-l border-gray-600/50 py-1">${iconHTML}${outputText}</div>`;
+                    outElem.scrollTop = outElem.scrollHeight;
+                };
+                
+                // Write output to whichever console is active
+                if (diagOut) processOutput(diagOut);
+                if (toolOut && toolOut !== diagOut) processOutput(toolOut);
+                
+                return; // Stop execution so it doesn't print in the main Remote Terminal modal
+            }
+            
+            // Fallback to original terminal logging for everything else
+            originalAppendTerminalOutput(payload);
+        };
 
     </script>
 </body>
