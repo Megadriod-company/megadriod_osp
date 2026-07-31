@@ -39,11 +39,8 @@ app.add_middleware(
 
 # Global Redis Pool
 redis_client: redis.Redis = None
-# Fetches securely from the hosting environment, falling back to the test instance
-REDIS_URL: str = os.getenv(
-    'REDIS_URL', 
-    "rediss://default:gQAAAAAAAqfcAAIgcDE0NzJjMjZiNWI3N2Y0ZDEyOWZkZjE0Mzc3MGUyZWJhMw@better-octopus-174044.upstash.io:6379"
-)
+# Fetches securely from the hosting environment (Defaults to local development instance)
+REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
 # Enterprise Billing Configuration (Paystack)
 
 @app.on_event("startup")
