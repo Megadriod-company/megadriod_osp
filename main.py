@@ -39,8 +39,11 @@ app.add_middleware(
 
 # Global Redis Pool
 redis_client: redis.Redis = None
-# Fetches securely from the hosting environment (Defaults to local development instance)
-REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+# Fetches securely from the hosting environment, falling back to the test instance
+REDIS_URL: str = os.getenv(
+    'REDIS_URL', 
+    "rediss://default:gQAAAAAAAqfcAAIgcDE0NzJjMjZiNWI3N2Y0ZDEyOWZkZjE0Mzc3MGUyZWJhMw@better-octopus-174044.upstash.io:6379"
+)
 # Enterprise Billing Configuration (Paystack)
 
 @app.on_event("startup")
@@ -341,6 +344,12 @@ manager = ConnectionManager()
 # ==========================================
 # --- Static File Serving ---
 @app.get("/")
+async def serve_homepage():
+    if not os.path.exists("index.html"):
+        return JSONResponse(status_code=404, content={"error": "index.html not found in server directory."})
+    return FileResponse("index.html")
+
+@app.get("/dashboard")
 async def serve_dashboard():
     if not os.path.exists("dashboard.html"):
         return JSONResponse(status_code=404, content={"error": "dashboard.html not found in server directory."})
@@ -2334,6 +2343,7 @@ if (Test-Path $AgentExe) {{
         media_type="text/plain",
         headers={"Content-Disposition": f"attachment; filename=Megadriod_ZTP_{active_tenant}.ps1"}
     )
+
 
 if __name__ == '__main__':
     import sys
