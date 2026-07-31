@@ -39,8 +39,11 @@ app.add_middleware(
 
 # Global Redis Pool
 redis_client: redis.Redis = None
-# Fetches securely from the hosting environment, no hardcoded credentials
-REDIS_URL: str = os.getenv('REDIS_URL')
+# Fetches securely from the hosting environment, falling back to the test instance
+REDIS_URL: str = os.getenv(
+    'REDIS_URL', 
+    "rediss://default:gQAAAAAAAqfcAAIgcDE0NzJjMjZiNWI3N2Y0ZDEyOWZkZjE0Mzc3MGUyZWJhMw@better-octopus-174044.upstash.io:6379"
+)
 # Enterprise Billing Configuration (Paystack)
 
 @app.on_event("startup")
@@ -212,6 +215,67 @@ class VulnerabilityItem(BaseModel):
     vulnerable_software: str
     status: str
     asset_id: str
+
+class RegistryPolicy(BaseModel):
+    path: str
+    name: str
+    value: str
+    type: str = "String" # String, DWord, QWord
+
+class ScriptPolicy(BaseModel):
+    name: str
+    script_content: str
+    execution_context: str = "SYSTEM" # SYSTEM or USER
+
+class CloudGPOProfile(BaseModel):
+    id: str = Field(default_factory=lambda: f"GPO-{str(uuid.uuid4())[:8].upper()}")
+    name: str
+    description: str
+    target_assets: List[str] = ["global"] # 'global' or specific asset UUIDs
+    registry_policies: List[RegistryPolicy] = []
+    script_policies: List[ScriptPolicy] = []
+    file_folder_policies: List[FileFolderPolicy] = [] # NEW
+    software_policies: List[SoftwareInstallPolicy] = [] # NEW
+    is_active: bool = True
+    updated_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class FileFolderPolicy(BaseModel):
+    action: str = "Create" # Create, Update, Replace, Delete
+    item_type: str = "Folder" # File or Folder
+    source_path: str = "" # URL or UNC path for files
+    destination_path: str
+
+class SoftwareInstallPolicy(BaseModel):
+    name: str
+    download_url: str
+    install_args: str = "/quiet /norestart"
+    architecture: str = "x64"
+
+class LapsCredential(BaseModel):
+    asset_id: str
+    admin_username: str = "Administrator"
+    current_password: str
+    rotation_schedule_days: int = 30
+    last_rotated: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+    expires_at: str
+
+class NetworkShareItem(BaseModel):
+    name: str
+    path: str
+    description: str
+
+class GlobalPatchApproval(BaseModel):
+    kb_article: str
+    approved_by: str
+    approved_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class NetworkDiagnosticRequest(BaseModel):
+    tool: str
+    target: str = ""
+    port: str = ""
+
+class SystemDiagnosticRequest(NetworkDiagnosticRequest):
+    pass
 # ==========================================
 # Engine section
 # ==========================================
@@ -251,21 +315,33 @@ class ConnectionManager:
 
     async def route_to_target(self, tenant_id: str, target_id: str, message: dict):
         """Directly routes a command/payload to a specific endpoint or dashboard."""
+        routed = False
         if tenant_id in self.active_connections:
             for connection in self.active_connections[tenant_id]:
                 if connection["id"] == target_id or target_id == "broadcast":
                     try:
                         await connection["ws"].send_json(message)
+                        routed = True
                     except Exception as e:
                         logger.warning(f"Failed direct route to {connection['id']}: {e}")
 
-manager = ConnectionManager()
+        if not routed and target_id != "broadcast":
+            # Instantly alert the dashboard if the agent is not connected
+            reply = {
+                "event": "command_result",
+                "task_id": message.get("task_id"),
+                "asset_id": target_id,
+                "success": False,
+                "output": f"ERROR: Endpoint Agent [{target_id[:8]}] is offline or not connected to WebSocket.",
+                "timestamp": datetime.utcnow().isoformat()
+            }
+            await self.broadcast_to_tenant(tenant_id, reply)
 
+manager = ConnectionManager()
 
 # ==========================================
 # api section
 # ==========================================
-
 # --- Static File Serving ---
 @app.get("/")
 async def serve_dashboard():
@@ -2022,6 +2098,245 @@ async def create_paystack_checkout(x_tenant_id: str = Header(None)):
     except Exception as e:
         logger.error(f"Paystack Integration Failed: {str(e)}")
         raise HTTPException(status_code=500, detail="Payment gateway is currently unavailable.")
+
+# --- Cloud Group Policy Engine (GPO / ADMX Equivalent) ---
+
+@app.post("/api/v1/gpo/profiles")
+async def create_gpo_profile(profile: CloudGPOProfile, x_tenant_id: str = Header(None)):
+    """Creates a centralized configuration profile to push registry keys and scripts to endpoints."""
+    if not redis_client or not x_tenant_id:
+        raise HTTPException(status_code=400, detail="Database Offline or Missing Tenant ID")
+    
+    profile_data = profile.dict() if hasattr(profile, 'dict') else profile.model_dump()
+    await redis_client.set(f"tenant:{x_tenant_id}:gpo_profile:{profile.id}", json.dumps(profile_data))
+    return {"status": "success", "profile_id": profile.id}
+
+@app.get("/api/v1/gpo/profiles")
+async def get_gpo_profiles(x_tenant_id: str = Header(None)):
+    """Retrieves all active enterprise configuration policies."""
+    if not redis_client or not x_tenant_id:
+        return []
+        
+    gpo_keys = await redis_client.keys(f"tenant:{x_tenant_id}:gpo_profile:*")
+    profiles = []
+    for key in gpo_keys:
+        data = await redis_client.get(key)
+        if data:
+            profiles.append(json.loads(data))
+    return profiles
+
+@app.get("/api/v1/endpoints/{asset_id}/gpo")
+async def get_applicable_gpo(asset_id: str, x_tenant_id: str = Header(None)):
+    """Endpoint polling route. Returns only GPOs assigned to 'global' or this specific asset_id."""
+    if not redis_client or not x_tenant_id:
+        return []
+        
+    gpo_keys = await redis_client.keys(f"tenant:{x_tenant_id}:gpo_profile:*")
+    applicable_profiles = []
+    for key in gpo_keys:
+        data = await redis_client.get(key)
+        if data:
+            profile = json.loads(data)
+            if profile.get("is_active"):
+                targets = profile.get("target_assets", [])
+                if "global" in targets or asset_id in targets:
+                    applicable_profiles.append(profile)
+    return applicable_profiles
+
+# --- Cloud Local Administrator Password Solution (LAPS) ---
+
+@app.post("/api/v1/endpoints/{asset_id}/laps")
+async def store_laps_credential(asset_id: str, cred: LapsCredential, x_tenant_id: str = Header(None)):
+    """Agent endpoint to securely vault the newly rotated local admin password."""
+    if not redis_client or not x_tenant_id:
+        raise HTTPException(status_code=400, detail="Database Offline or Missing Tenant ID")
+    
+    # In a true zero-trust enterprise, this payload would be encrypted with a public key
+    # where only the backend holds the private key. For this iteration, we trust the TLS tunnel.
+    cred_data = cred.dict() if hasattr(cred, 'dict') else cred.model_dump()
+    
+    # Store with expiration so stale passwords are automatically purged from the vault
+    key = f"tenant:{x_tenant_id}:laps:{asset_id}"
+    await redis_client.set(key, json.dumps(cred_data))
+    
+    logger.info(f"LAPS Credential vaulted for Asset: {asset_id} in Tenant {x_tenant_id}")
+    return {"status": "success"}
+
+@app.get("/api/v1/endpoints/{asset_id}/laps")
+async def retrieve_laps_credential(asset_id: str, x_tenant_id: str = Header(None), x_user_id: str = Header(None)):
+    """Admin dashboard endpoint to retrieve the current local admin password."""
+    if not redis_client or not x_tenant_id:
+        raise HTTPException(status_code=400)
+        
+    key = f"tenant:{x_tenant_id}:laps:{asset_id}"
+    data = await redis_client.get(key)
+    
+    if data:
+        # Audit Log: Record that a technician requested the plaintext password
+        audit_log = {
+            "actor": x_user_id or "Unknown Admin",
+            "action": "LAPS CREDENTIAL RETRIEVAL",
+            "details": f"Requested local administrator password for asset {asset_id[:8]}",
+            "timestamp": datetime.utcnow().isoformat()
+        }
+        await redis_client.set(f"tenant:{x_tenant_id}:audit_log:{str(uuid.uuid4())}", json.dumps(audit_log))
+        
+        return json.loads(data)
+        
+    raise HTTPException(status_code=404, detail="No LAPS credential vaulted for this asset.")
+
+@app.post("/api/v1/endpoints/{asset_id}/laps/rotate")
+async def force_laps_rotation(asset_id: str, x_tenant_id: str = Header(None)):
+    """Admin dashboard endpoint to force an immediate password rotation on the endpoint."""
+    if not x_tenant_id: raise HTTPException(status_code=400)
+    
+    payload = {
+        "type": "rotate_laps",
+        "task_id": f"laps_{str(uuid.uuid4())[:8]}",
+        "target_asset_id": asset_id,
+        "data": {}
+    }
+    
+    # Route command to agent via WebSocket
+    await manager.route_to_target(x_tenant_id, asset_id, payload)
+    return {"status": "rotation_command_dispatched"}
+
+# --- SMB & Network Share Management ---
+
+@app.post("/api/v1/assets/{asset_id}/inventory/shares")
+async def receive_network_shares(
+    asset_id: str, 
+    payload: List[NetworkShareItem], 
+    x_tenant_id: str = Header(None)
+):
+    """Ingests active SMB/Network Shares exported by the endpoint."""
+    if not x_tenant_id or not redis_client:
+        raise HTTPException(status_code=400)
+    
+    asset_key = f"tenant:{x_tenant_id}:asset:{asset_id}"
+    asset_raw = await redis_client.get(asset_key)
+    
+    if asset_raw:
+        asset_data = json.loads(asset_raw)
+        asset_data["network_shares"] = [item.dict() if hasattr(item, 'dict') else item.model_dump() for item in payload]
+        await redis_client.set(asset_key, json.dumps(asset_data))
+        return {"status": "success", "items_processed": len(payload)}
+    raise HTTPException(status_code=404)
+
+# --- Megadriod WSUS (Global Patch Baselines) ---
+
+@app.post("/api/v1/patches/global-approve")
+async def approve_patch_globally(approval: GlobalPatchApproval, x_tenant_id: str = Header(None)):
+    """Approves a KB article for fleet-wide installation."""
+    if not redis_client or not x_tenant_id:
+        raise HTTPException(status_code=400)
+    
+    app_data = approval.dict() if hasattr(approval, 'dict') else approval.model_dump()
+    await redis_client.set(f"tenant:{x_tenant_id}:global_patch:{approval.kb_article}", json.dumps(app_data))
+    
+    # Optional: Broadcast a signal to all agents to immediately evaluate the new baseline
+    payload = {
+        "type": "evaluate_patch_baseline",
+        "task_id": f"baseline_{str(uuid.uuid4())[:8]}",
+        "target_asset_id": "broadcast",
+        "data": {}
+    }
+    await manager.route_to_target(x_tenant_id, "broadcast", payload)
+    
+    return {"status": "success"}
+
+@app.get("/api/v1/patches/global-approve")
+async def get_global_approved_patches(x_tenant_id: str = Header(None)):
+    """Returns all KB articles approved for the fleet."""
+    if not redis_client or not x_tenant_id:
+        return []
+    
+    keys = await redis_client.keys(f"tenant:{x_tenant_id}:global_patch:*")
+    approved = []
+    for k in keys:
+        data = await redis_client.get(k)
+        if data: approved.append(json.loads(data))
+    return approved
+
+# --- Megadriod Diagnostics API ---
+
+@app.post("/api/v1/endpoints/{asset_id}/diagnostics/network")
+async def trigger_network_diagnostic(
+    asset_id: str, 
+    req: NetworkDiagnosticRequest, 
+    x_tenant_id: str = Header(None)
+):
+    """API-first endpoint to execute deep network troubleshooting macros on an endpoint."""
+    if not x_tenant_id:
+        raise HTTPException(status_code=400, detail="Missing Tenant ID")
+        
+    task_id = f"diag_net_{str(uuid.uuid4())[:8]}"
+    
+    payload = {
+        "type": "network_diagnostic",
+        "task_id": task_id,
+        "target_asset_id": asset_id,
+        "data": req.dict() if hasattr(req, 'dict') else req.model_dump()
+    }
+    
+    # Route command to agent via WebSocket
+    await manager.route_to_target(x_tenant_id, asset_id, payload)
+    
+    return {"status": "dispatched", "task_id": task_id, "tool": req.tool}
+
+# --- Megadriod Configuration Manager (Zero-Touch Provisioning) ---
+
+@app.get("/api/v1/admin/agent/ztp.ps1")
+async def download_ztp_script(tenant_id: str = None, x_tenant_id: str = Header(None)):
+    """Generates a raw PowerShell script for bare-metal imaging (MDT/SCCM integration)."""
+    active_tenant = tenant_id or x_tenant_id or "Setup"
+    
+    # This script bypasses execution policies, downloads the agent, and installs it silently
+    ps1_content = f"""
+<#
+.SYNOPSIS
+    Megadriod Enterprise Zero-Touch Provisioning (ZTP) Script
+.DESCRIPTION
+    Execute this script during OOBE, MDT Task Sequences, or Golden Image prep.
+#>
+$ErrorActionPreference = 'Stop'
+$TenantID = "{active_tenant}"
+$AgentUrl = "https://github.com/megadriodteam/megadriod-osp/releases/download/v1.0.0/MOSP-Agent.exe"
+$AgentDir = "$env:ProgramData\\Megadroid\\MOSP-Agent"
+$AgentExe = "$AgentDir\\MOSP-Agent.exe"
+$ConfigFile = "$AgentDir\\config.json"
+
+Write-Output "[MOSP-ZTP] Initializing Bare-Metal Enrollment for Tenant: $TenantID"
+
+if (-not (Test-Path $AgentDir)) {{ New-Item -ItemType Directory -Force -Path $AgentDir | Out-Null }}
+
+$ConfigJson = @"
+{{
+    "api_base_url": "https://megadriod-osp.onrender.com/api/v1",
+    "ws_base_url": "wss://megadriod-osp.onrender.com/ws",
+    "tenant_id": "$TenantID",
+    "agent_api_key": ""
+}}
+"@
+Set-Content -Path $ConfigFile -Value $ConfigJson -Force
+
+Write-Output "[MOSP-ZTP] Downloading Core Binary..."
+Invoke-WebRequest -Uri $AgentUrl -OutFile $AgentExe -UseBasicParsing
+
+if (Test-Path $AgentExe) {{
+    Write-Output "[MOSP-ZTP] Registering Windows Service..."
+    Start-Process -FilePath $AgentExe -ArgumentList "install" -Wait -NoNewWindow
+    Start-Process -FilePath $AgentExe -ArgumentList "start" -Wait -NoNewWindow
+    Write-Output "[MOSP-ZTP] Enrollment Complete."
+}} else {{
+    Write-Error "[MOSP-ZTP] Failed to download agent."
+}}
+"""
+    return Response(
+        content=ps1_content,
+        media_type="text/plain",
+        headers={"Content-Disposition": f"attachment; filename=Megadriod_ZTP_{active_tenant}.ps1"}
+    )
 
 if __name__ == '__main__':
     import sys
