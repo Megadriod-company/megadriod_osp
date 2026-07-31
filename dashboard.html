@@ -180,6 +180,7 @@
                     <li><a href="#" onclick="switchView('assets')" data-target="assets" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-hard-drives text-xl mr-3"></i><span class="font-medium text-sm">Asset Inventory</span></a></li>
                     <li><a href="#" onclick="switchView('patches')" data-target="patches" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-magic-wand text-xl mr-3"></i><span class="font-medium text-sm">Patch Management</span></a></li>
                     <li><a href="#" onclick="switchView('security')" data-target="security" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-shield-warning text-xl mr-3"></i><span class="font-medium text-sm">Vulnerability & Risk</span></a></li>
+                    <li><a href="siem.html" class="nav-link flex items-center px-6 py-3 text-mosp-accent hover:text-white transition-colors border-r-2 border-transparent bg-mosp-accent/5"><i class="ph ph-brain text-xl mr-3"></i><span class="font-medium text-sm">SIEM & Correlator</span></a></li>
                     <li><a href="#" onclick="switchView('itsm')" data-target="itsm" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-ticket text-xl mr-3"></i><span class="font-medium text-sm">ITSM Service Desk</span></a></li>
                     <li><a href="#" onclick="switchView('compliance')" data-target="compliance" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-file-text text-xl mr-3"></i><span class="font-medium text-sm">Compliance & GRC</span></a></li>
                     <li><a href="#" onclick="switchView('workplace')" data-target="workplace" class="nav-link flex items-center px-6 py-3 text-gray-400 hover:text-gray-100 hover:bg-white/5 transition-colors border-r-2 border-transparent"><i class="ph ph-briefcase text-xl mr-3"></i><span class="font-medium text-sm">Digital Workplace</span></a></li>
@@ -1564,17 +1565,24 @@
                     </div>
                 </div>
 
-                <!-- Real-Time Outage Panel (Hidden by default, triggered by JS) -->
-                <div id="network-outage-panel" class="hidden bg-mosp-danger/10 border border-mosp-danger/50 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center animate-pulse shadow-[0_0_15px_rgba(255,42,42,0.1)]">
-                    <div class="flex items-center mb-2 sm:mb-0">
-                        <i class="ph ph-warning-octagon text-3xl text-mosp-danger mr-3"></i>
-                        <div>
-                            <h3 class="text-mosp-danger font-bold text-sm tracking-widest uppercase">Network Degradation Detected</h3>
-                            <p class="text-xs text-gray-300 font-mono mt-0.5" id="network-outage-reason">Review WAN Links and Switch metrics.</p>
-                        </div>
-                    </div>
-                    <button class="px-4 py-1.5 bg-mosp-danger/20 hover:bg-mosp-danger text-mosp-danger hover:text-white text-xs font-bold rounded border border-mosp-danger/50 transition-colors" onclick="declareIncident()">Declare Incident</button>
+                <!-- Network View Tabs -->
+                <div class="flex border-b border-mosp-border bg-mosp-panel/50 px-2 overflow-x-auto mb-4 rounded-t-lg">
+                    <button class="net-tab active px-6 py-3 text-sm font-medium focus:outline-none whitespace-nowrap border-b-2 border-mosp-accent text-white flex items-center" onclick="switchNetworkTab('tab-net-overview')"><i class="ph ph-activity text-lg mr-2 text-mosp-accent"></i> Telemetry Overview</button>
+                    <button class="net-tab px-6 py-3 text-sm font-medium focus:outline-none whitespace-nowrap border-b-2 border-transparent text-gray-400 hover:text-gray-200 flex items-center" onclick="switchNetworkTab('tab-net-security')"><i class="ph ph-shield-warning text-lg mr-2 text-mosp-warning"></i> Network Security (NTA)</button>
                 </div>
+
+                <div id="tab-net-overview" class="net-content active space-y-6">
+                    <!-- Real-Time Outage Panel (Hidden by default, triggered by JS) -->
+                    <div id="network-outage-panel" class="hidden bg-mosp-danger/10 border border-mosp-danger/50 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center animate-pulse shadow-[0_0_15px_rgba(255,42,42,0.1)]">
+                        <div class="flex items-center mb-2 sm:mb-0">
+                            <i class="ph ph-warning-octagon text-3xl text-mosp-danger mr-3"></i>
+                            <div>
+                                <h3 class="text-mosp-danger font-bold text-sm tracking-widest uppercase">Network Degradation Detected</h3>
+                                <p class="text-xs text-gray-300 font-mono mt-0.5" id="network-outage-reason">Review WAN Links and Switch metrics.</p>
+                            </div>
+                        </div>
+                        <button class="px-4 py-1.5 bg-mosp-danger/20 hover:bg-mosp-danger text-mosp-danger hover:text-white text-xs font-bold rounded border border-mosp-danger/50 transition-colors" onclick="declareIncident()">Declare Incident</button>
+                    </div>
 
                 <!-- Network KPI Grid -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
@@ -1686,26 +1694,71 @@
                 </div>
 
                 <!-- Synthetic Gateway Probes Table -->
-                <div class="glass-panel rounded-lg overflow-hidden border border-mosp-border">
-                    <div class="p-4 border-b border-mosp-border bg-mosp-panel/50 flex justify-between items-center">
-                        <h3 class="text-sm font-semibold text-white uppercase tracking-widest flex items-center"><i class="ph ph-globe-hemisphere-east mr-2 text-mosp-purple"></i> Synthetic Gateway Probes</h3>
+                    <div class="glass-panel rounded-lg overflow-hidden border border-mosp-border">
+                        <div class="p-4 border-b border-mosp-border bg-mosp-panel/50 flex justify-between items-center">
+                            <h3 class="text-sm font-semibold text-white uppercase tracking-widest flex items-center"><i class="ph ph-globe-hemisphere-east mr-2 text-mosp-purple"></i> Synthetic Gateway Probes</h3>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm mosp-table">
+                                <thead class="bg-mosp-panel text-gray-400 text-xs">
+                                    <tr>
+                                        <th class="px-6 py-3">Asset Name</th>
+                                        <th class="px-6 py-3">Gateway IP</th>
+                                        <th class="px-6 py-3">Latency (ms)</th>
+                                        <th class="px-6 py-3">Local ARP Neighbors</th>
+                                        <th class="px-6 py-3">TCP Sessions</th>
+                                        <th class="px-6 py-3">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="wan-table-body" class="divide-y divide-mosp-border/50 text-gray-300">
+                                    <tr><td colspan="6" class="text-center text-gray-500 py-6 italic"><i class="ph ph-spinner animate-spin mr-2"></i> Analyzing ICMP telemetry...</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-sm mosp-table">
-                            <thead class="bg-mosp-panel text-gray-400 text-xs">
-                                <tr>
-                                    <th class="px-6 py-3">Asset Name</th>
-                                    <th class="px-6 py-3">Gateway IP</th>
-                                    <th class="px-6 py-3">Latency (ms)</th>
-                                    <th class="px-6 py-3">Local ARP Neighbors</th>
-                                    <th class="px-6 py-3">TCP Sessions</th>
-                                    <th class="px-6 py-3">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="wan-table-body" class="divide-y divide-mosp-border/50 text-gray-300">
-                                <tr><td colspan="6" class="text-center text-gray-500 py-6 italic"><i class="ph ph-spinner animate-spin mr-2"></i> Analyzing ICMP telemetry...</td></tr>
-                            </tbody>
-                        </table>
+                </div>
+
+                <!-- NEW NTA SECURITY TAB -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        
+                        <!-- NTA Alerts Feed -->
+                        <div class="glass-panel rounded-lg flex flex-col overflow-hidden lg:col-span-2 border border-mosp-border">
+                            <div class="p-4 border-b border-mosp-border bg-mosp-panel/50 flex justify-between items-center">
+                                <h3 class="text-sm font-semibold text-white uppercase tracking-widest flex items-center"><i class="ph ph-radar mr-2 text-mosp-warning text-lg"></i> Threat Analysis Engine</h3>
+                                <span class="px-2 py-0.5 bg-mosp-success/20 text-mosp-success border border-mosp-success/30 rounded text-[10px] font-bold uppercase tracking-wider">Deep Packet Inspection Active</span>
+                            </div>
+                            <div class="flex-1 overflow-x-auto bg-black/20">
+                                <table class="w-full text-left text-sm mosp-table">
+                                    <thead class="bg-mosp-panel/80 text-gray-400 text-xs uppercase font-semibold">
+                                        <tr>
+                                            <th class="px-4 py-3">Timestamp</th>
+                                            <th class="px-4 py-3">Asset</th>
+                                            <th class="px-4 py-3">Threat Type</th>
+                                            <th class="px-4 py-3">Connection Details</th>
+                                            <th class="px-4 py-3 text-right">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="nta-alerts-body" class="divide-y divide-mosp-border/50 text-gray-300 font-mono text-xs">
+                                        <tr><td colspan="5" class="text-center py-12 text-gray-500 italic">No network anomalies detected.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- DNS & DGA Summary -->
+                        <div class="glass-panel rounded-lg p-5 flex flex-col h-full border border-mosp-border">
+                            <h3 class="text-sm font-semibold text-white uppercase tracking-widest mb-4 flex items-center"><i class="ph ph-globe mr-2 text-mosp-accent text-lg"></i> DNS Tunneling Monitor</h3>
+                            <div class="flex-1 flex flex-col justify-center items-center p-6 bg-black/30 rounded border border-mosp-border/50 text-center">
+                                <i class="ph ph-shield-check text-5xl text-gray-600 mb-3 opacity-50"></i>
+                                <p class="text-white font-bold text-lg mb-1">No Anomalies Found</p>
+                                <p class="text-xs text-gray-400">DNS query lengths and entropy are within standard deviation bounds.</p>
+                            </div>
+                            <div class="mt-4 p-3 bg-mosp-panel/50 rounded border border-mosp-border flex items-start">
+                                <i class="ph ph-info text-mosp-secondary mt-0.5 mr-2"></i>
+                                <p class="text-[10px] text-gray-400 leading-tight">The DGA detector analyzes high-entropy subdomains typical of malware exfiltration over DNS UDP/53.</p>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -2980,6 +3033,40 @@
                 avatarDiv.innerText = initials;
             }
             
+            // Restore persistent UI feeds
+            const alertFeed = document.getElementById('alert-feed');
+            if (alertFeed && alertFeedCache.length > 0) {
+                 alertFeed.innerHTML = '';
+                 [...alertFeedCache].reverse().forEach(html => alertFeed.insertAdjacentHTML('afterbegin', html));
+            }
+            
+            const syslogFeed = document.getElementById('syslog-feed');
+            if (syslogFeed && syslogFeedCache.length > 0) {
+                 syslogFeed.innerHTML = '';
+                 [...syslogFeedCache].reverse().forEach(html => syslogFeed.insertAdjacentHTML('afterbegin', html));
+            }
+
+            const lockoutQueue = document.getElementById('lockout-queue-body');
+            if (lockoutQueue && lockoutFeedCache.length > 0) {
+                 lockoutQueue.innerHTML = '';
+                 [...lockoutFeedCache].reverse().forEach(html => lockoutQueue.insertAdjacentHTML('afterbegin', html));
+            }
+
+            const suspFeed = document.getElementById('suspicious-activity-feed');
+            if (suspFeed && suspiciousFeedCache.length > 0) {
+                 const emptyState = document.getElementById('suspicious-empty-state');
+                 if(emptyState) emptyState.remove();
+                 // We don't clear the whole container because of the persistent weak password widget, 
+                 // just append the historical HTML elements
+                 [...suspiciousFeedCache].reverse().forEach(html => suspFeed.insertAdjacentHTML('afterbegin', html));
+            }
+
+            const ntaFeed = document.getElementById('nta-alerts-body');
+            if (ntaFeed && ntaFeedCache.length > 0) {
+                 ntaFeed.innerHTML = '';
+                 [...ntaFeedCache].reverse().forEach(html => ntaFeed.insertAdjacentHTML('afterbegin', html));
+            }
+            
             overlay.classList.add('opacity-0');
             setTimeout(() => {
                 overlay.classList.add('hidden');
@@ -3016,6 +3103,13 @@
         let activeItsmFilter = 'All';
         let activeTicketId = null;
         let processPollInterval = null;
+        
+        // Caches for persistent feeds across reloads
+        let alertFeedCache = JSON.parse(sessionStorage.getItem("MOSP_DASH_ALERTS") || "[]");
+        let syslogFeedCache = JSON.parse(sessionStorage.getItem("MOSP_DASH_SYSLOG") || "[]");
+        let lockoutFeedCache = JSON.parse(sessionStorage.getItem("MOSP_DASH_LOCKOUTS") || "[]");
+        let suspiciousFeedCache = JSON.parse(sessionStorage.getItem("MOSP_DASH_SUSPICIOUS") || "[]");
+        let ntaFeedCache = JSON.parse(sessionStorage.getItem("MOSP_DASH_NTA") || "[]"); // NTA Cache
 
         function filterTickets(filterType) {
             activeItsmFilter = filterType;
@@ -4896,6 +4990,11 @@
                 appendSyslogToFeed(payload.data);
             }
             
+            // Handle Live NTA Alerts
+            if (payload.event === "nta_alert") {
+                appendNtaAlert(payload.data);
+            }
+            
             // Handle Live Agent Network Probes natively
             if (payload.event === "synthetic_network") {
                  // The payload contains the new synthetic state, merge the asset_id
@@ -4968,6 +5067,10 @@
 
             feed.insertAdjacentHTML('afterbegin', logHTML);
             
+            syslogFeedCache.unshift(logHTML);
+            if(syslogFeedCache.length > 50) syslogFeedCache.pop();
+            sessionStorage.setItem("MOSP_DASH_SYSLOG", JSON.stringify(syslogFeedCache));
+            
             // Keep feed bounded to prevent DOM bloat
             if (feed.children.length > 100) feed.removeChild(feed.lastChild);
             
@@ -4982,6 +5085,7 @@
         
         function appendAccountLockout(user, ip, timeStr) {
             const queue = document.getElementById('lockout-queue-body');
+            if(!queue) return;
             const emptyState = document.getElementById('lockout-empty-state');
             if(emptyState) emptyState.remove();
             
@@ -4996,6 +5100,10 @@
             `;
             queue.insertAdjacentHTML('afterbegin', lockoutHTML);
             
+            lockoutFeedCache.unshift(lockoutHTML);
+            if(lockoutFeedCache.length > 15) lockoutFeedCache.pop();
+            sessionStorage.setItem("MOSP_DASH_LOCKOUTS", JSON.stringify(lockoutFeedCache));
+            
             // Maintain rolling queue bounds
             if (queue.children.length > 15) queue.removeChild(queue.lastChild);
         }
@@ -5003,6 +5111,7 @@
         function appendAlertToFeed(data) {
             const alertData = data.data ? { ...data, ...data.data } : data;
             const feed = document.getElementById('alert-feed');
+            if(!feed) return;
             const emptyState = document.getElementById('alert-empty-state');
             if (emptyState) emptyState.remove();
 
@@ -5039,11 +5148,17 @@
                 </div>`;
                 
             feed.insertAdjacentHTML('afterbegin', alertHTML);
+            
+            alertFeedCache.unshift(alertHTML);
+            if(alertFeedCache.length > 50) alertFeedCache.pop();
+            sessionStorage.setItem("MOSP_DASH_ALERTS", JSON.stringify(alertFeedCache));
+            
             if (feed.children.length > 50) feed.removeChild(feed.lastChild);
         }
 
         function appendSuspiciousActivity(data) {
             const feed = document.getElementById('suspicious-activity-feed');
+            if(!feed) return;
             const emptyState = document.getElementById('suspicious-empty-state');
             if(emptyState) emptyState.remove();
             
@@ -5061,7 +5176,72 @@
                 </div>
              `;
             feed.insertAdjacentHTML('afterbegin', itemHTML);
+            
+            suspiciousFeedCache.unshift(itemHTML);
+            if(suspiciousFeedCache.length > 20) suspiciousFeedCache.pop();
+            sessionStorage.setItem("MOSP_DASH_SUSPICIOUS", JSON.stringify(suspiciousFeedCache));
+            
             if (feed.children.length > 20) feed.removeChild(feed.lastChild);
+        }
+
+        function appendNtaAlert(data) {
+            const tbody = document.getElementById('nta-alerts-body');
+            if (!tbody) return;
+            
+            // Remove empty state if present
+            if (tbody.innerHTML.includes("No network anomalies detected")) {
+                tbody.innerHTML = '';
+            }
+
+            const timeStr = new Date(data.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+            let sevCol = 'text-mosp-warning';
+            if (data.severity === 'CRITICAL') sevCol = 'text-mosp-danger animate-pulse';
+
+            const assetObj = globalAssetCache.find(a => a.id === data.asset_id);
+            const assetName = assetObj ? assetObj.name : data.asset_id.substring(0,8);
+
+            const rowHtml = `
+                <tr class="hover:bg-white/5 transition-colors border-b border-mosp-border/50">
+                    <td class="px-4 py-3 text-gray-500">${timeStr}</td>
+                    <td class="px-4 py-3 text-white font-medium">${assetName}</td>
+                    <td class="px-4 py-3 font-bold ${sevCol} uppercase tracking-wider">${data.type}</td>
+                    <td class="px-4 py-3 text-gray-400 truncate max-w-xs" title="${data.details}">${data.details}</td>
+                    <td class="px-4 py-3 text-right">
+                        <button onclick="changeAssetLifecycle('Compromised')" class="px-2 py-1 bg-mosp-danger/10 border border-mosp-danger/50 text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-[10px] font-bold transition-colors uppercase whitespace-nowrap">Block Connection</button>
+                    </td>
+                </tr>
+            `;
+
+            tbody.insertAdjacentHTML('afterbegin', rowHtml);
+
+            // Cache management
+            ntaFeedCache.unshift(rowHtml);
+            if (ntaFeedCache.length > 15) ntaFeedCache.pop();
+            sessionStorage.setItem("MOSP_DASH_NTA", JSON.stringify(ntaFeedCache));
+            
+            if (tbody.children.length > 15) tbody.removeChild(tbody.lastChild);
+        }
+
+        function switchNetworkTab(tabId) {
+            document.querySelectorAll('.net-tab').forEach(el => {
+                el.classList.remove('active', 'text-white', 'border-mosp-accent');
+                el.classList.add('text-gray-400', 'border-transparent');
+            });
+            document.querySelectorAll('.net-content').forEach(el => {
+                el.classList.remove('active');
+                el.classList.add('hidden');
+            });
+            
+            const btn = document.querySelector(`button[onclick="switchNetworkTab('${tabId}')"]`);
+            if (btn) {
+                btn.classList.remove('text-gray-400', 'border-transparent');
+                btn.classList.add('active', 'text-white', 'border-mosp-accent');
+            }
+            const tab = document.getElementById(tabId);
+            if (tab) {
+                tab.classList.remove('hidden');
+                tab.classList.add('active');
+            }
         }
 
         // Add a global variable to track the active shell directory
