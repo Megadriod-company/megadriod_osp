@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-OSP | SIEM & Correlation Engine</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        mosp: {
+                            bg: '#080b12', panel: '#111623', border: '#1e2638',
+                            accent: '#00f0ff', secondary: '#3b82f6',
+                            danger: '#ff2a2a', warning: '#ffea00',
+                            success: '#00ff9d', purple: '#b026ff'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #080b12; color: #e5e7eb; overflow: hidden; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #080b12; }
+        ::-webkit-scrollbar-thumb { background: #1e2638; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
+
+        .glass-panel {
+            background: rgba(17, 22, 35, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(30, 38, 56, 0.9);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
+        
+        .pulse-dot {
+            height: 8px; width: 8px; border-radius: 50%; display: inline-block;
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.8);
+        }
+
+        .timeline-connector {
+            position: absolute; left: 1.25rem; top: 2rem; bottom: -1rem; width: 2px;
+            background: linear-gradient(to bottom, #3b82f6, #ff2a2a); z-index: 0;
+        }
+
+        .json-key { color: #3b82f6; }
+        .json-string { color: #00ff9d; }
+        .json-number { color: #ffea00; }
+    </style>
+</head>
+<body class="flex h-screen antialiased selection:bg-mosp-accent selection:text-black">
+
+    <!-- AUTHENTICATION OVERLAY -->
+    <div id="auth-overlay" class="absolute inset-0 bg-mosp-bg flex items-center justify-center z-[100] transition-opacity duration-500">
+        <div class="glass-panel p-8 rounded-lg w-full max-w-md border-t-4 border-t-mosp-accent shadow-[0_0_30px_rgba(0,240,255,0.1)]">
+            <div class="flex flex-col items-center justify-center mb-8">
+                <div class="w-16 h-16 bg-mosp-panel border border-mosp-accent/50 rounded-full flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.2)] mb-4">
+                    <img src="./logo.png" alt="M" class="w-8 h-8 object-contain" onerror="this.outerHTML='<i class=\'ph ph-shield-check text-3xl text-mosp-accent\'></i>'">
+                </div>
+                <h1 class="text-2xl font-bold text-white tracking-widest">M-OSP SIEM</h1>
+                <p class="text-xs text-gray-500 font-mono mt-1">Next-Gen Correlation Engine</p>
+            </div>
+            
+            <form id="login-form" class="space-y-5" onsubmit="handleLogin(event)">
+                <div>
+                    <label class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1.5">Tenant ID</label>
+                    <div class="relative">
+                        <i class="ph ph-buildings absolute left-3 top-2.5 text-gray-500 text-lg"></i>
+                        <input type="text" id="login-tenant" required placeholder="Enter Organization Tenant UUID" class="w-full bg-black/30 border border-mosp-border rounded pl-10 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-mosp-accent transition-colors">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1.5">Admin User ID</label>
+                    <div class="relative">
+                        <i class="ph ph-user absolute left-3 top-2.5 text-gray-500 text-lg"></i>
+                        <input type="text" id="login-user" required placeholder="admin@company.com" class="w-full bg-black/30 border border-mosp-border rounded pl-10 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-mosp-accent transition-colors">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1.5">API / Auth Token</label>
+                    <div class="relative">
+                        <i class="ph ph-key absolute left-3 top-2.5 text-gray-500 text-lg"></i>
+                        <input type="password" id="login-token" required placeholder="????????????????" class="w-full bg-black/30 border border-mosp-border rounded pl-10 pr-3 py-2 text-sm text-white font-mono outline-none focus:border-mosp-accent transition-colors">
+                    </div>
+                </div>
+                
+                <div id="login-error" class="hidden text-mosp-danger text-xs text-center bg-mosp-danger/10 border border-mosp-danger/30 p-2 rounded">
+                    Authentication Failed. Check Tenant ID and Token.
+                </div>
+
+                <button type="submit" id="login-btn" class="w-full px-4 py-3 mt-2 bg-mosp-accent/20 hover:bg-mosp-accent text-mosp-accent hover:text-black border border-mosp-accent font-bold rounded transition-colors flex items-center justify-center text-sm shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                    <i class="ph ph-sign-in mr-2 text-lg"></i> Enter SIEM Console
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div id="siem-app-container" class="flex flex-1 h-full w-full hidden opacity-0 transition-opacity duration-1000">
+
+        <!-- Sidebar -->
+        <aside class="w-64 bg-mosp-panel border-r border-mosp-border flex-shrink-0 flex flex-col z-40">
+            <div class="h-16 flex-none flex items-center px-6 border-b border-mosp-border">
+                <img src="./logo.png" alt="M" class="w-8 h-8 mr-3 object-contain" onerror="this.outerHTML='<i class=\'ph ph-shield-check text-2xl text-mosp-accent mr-3\'></i>'">
+                <span class="text-xl font-bold tracking-widest text-white">M-OSP</span>
+            </div>
+            <nav class="flex-1 overflow-y-auto py-4">
+                <ul class="space-y-1">
+                    <!-- Navigating back to main dashboard -->
+                    <li><a href="dashboard_4.html" class="flex items-center px-6 py-3 text-gray-400 hover:text-white transition-colors"><i class="ph ph-squares-four text-xl mr-3"></i><span class="font-medium text-sm">Main Dashboard</span></a></li>
+                    <li class="mt-4 mb-2 px-6"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Security Analytics</span></li>
+                    <li><a href="#" class="flex items-center px-6 py-3 bg-mosp-accent/10 text-mosp-accent border-r-2 border-mosp-accent"><i class="ph ph-brain text-xl mr-3"></i><span class="font-medium text-sm">SIEM & Correlator</span></a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="flex-1 flex flex-col h-screen overflow-hidden bg-mosp-bg relative">
+            <header class="h-16 flex-none flex items-center justify-between px-6 bg-mosp-panel/50 backdrop-blur-md border-b border-mosp-border z-10">
+                <h1 class="text-xl font-bold text-white tracking-wide flex items-center">
+                    <i class="ph ph-brain text-mosp-secondary mr-2"></i> SIEM Event Correlation Engine
+                </h1>
+                <div class="flex items-center space-x-5">
+                    <div class="text-xs text-gray-400 flex flex-col items-end border-r border-mosp-border pr-4">
+                        <span>Tenant ID</span>
+                        <span id="display-tenant-id" class="text-mosp-accent font-mono font-semibold">--</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span id="ws-status-dot" class="pulse-dot bg-mosp-danger mr-2"></span>
+                        <span id="ws-status-text" class="text-xs text-gray-400 font-mono">Stream Offline</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-hidden p-6 flex flex-col">
+                <!-- KPI Row -->
+                <div class="grid grid-cols-3 gap-6 mb-6 flex-none">
+                    <div class="glass-panel p-4 rounded flex justify-between items-center border-l-2 border-l-mosp-accent">
+                        <div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Raw Telemetry Ingested</p>
+                            <p class="text-2xl text-white font-mono mt-1" id="kpi-ingest">0</p>
+                        </div>
+                        <i class="ph ph-database text-3xl text-mosp-accent opacity-50"></i>
+                    </div>
+                    <div class="glass-panel p-4 rounded flex justify-between items-center border-l-2 border-l-mosp-secondary">
+                        <div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Active Timelines</p>
+                            <p class="text-2xl text-white font-mono mt-1" id="kpi-timelines">0</p>
+                        </div>
+                        <i class="ph ph-git-merge text-3xl text-mosp-secondary opacity-50"></i>
+                    </div>
+                    <div class="glass-panel p-4 rounded flex justify-between items-center border-l-2 border-l-mosp-danger">
+                        <div>
+                            <p class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">High-Confidence Chains</p>
+                            <p class="text-2xl text-mosp-danger font-mono mt-1 font-bold" id="kpi-critical">0</p>
+                        </div>
+                        <i class="ph ph-siren text-3xl text-mosp-danger opacity-50 animate-pulse"></i>
+                    </div>
+                </div>
+
+                <div class="flex-1 grid grid-cols-1 lg:grid-cols-2 gap-6 overflow-hidden">
+                    
+                    <!-- Left: Raw Immutable Stream -->
+                    <div class="glass-panel rounded border border-mosp-border flex flex-col h-full overflow-hidden">
+                        <div class="p-3 border-b border-mosp-border bg-mosp-panel/50 flex justify-between items-center">
+                            <span class="text-xs font-bold text-mosp-success uppercase tracking-widest flex items-center"><i class="ph ph-terminal-window mr-2 text-lg"></i> Immutable Redis Stream</span>
+                            <span class="text-[10px] text-gray-500 font-mono">Live Firehose</span>
+                        </div>
+                        <div id="raw-stream" class="flex-1 bg-[#05070a] p-4 overflow-y-auto font-mono text-[10px] text-gray-300 space-y-2 shadow-inner">
+                            <div class="text-center text-gray-600 italic py-10">Awaiting stream ingestion...</div>
+                        </div>
+                    </div>
+
+                    <!-- Right: Multi-Stage Correlator (Attack Timelines) -->
+                    <div class="glass-panel rounded border border-mosp-border flex flex-col h-full overflow-hidden">
+                        <div class="border-b border-mosp-border bg-mosp-panel/50 flex justify-between items-center overflow-x-auto whitespace-nowrap">
+                            <div class="flex">
+                                <button class="siem-tab active px-4 py-3 text-xs font-bold text-mosp-secondary uppercase tracking-widest border-b-2 border-mosp-secondary focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('timelines')"><i class="ph ph-git-branch mr-2 text-lg"></i> Correlated Chains</button>
+                                <button class="siem-tab px-4 py-3 text-xs font-bold text-gray-500 hover:text-mosp-secondary uppercase tracking-widest border-b-2 border-transparent focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('triage')"><i class="ph ph-list-dashes mr-2 text-lg"></i> Triage Queue</button>
+                                <button class="siem-tab px-4 py-3 text-xs font-bold text-gray-500 hover:text-mosp-secondary uppercase tracking-widest border-b-2 border-transparent focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('soar')"><i class="ph ph-lightning mr-2 text-lg"></i> SOAR & Tuning</button>
+                            </div>
+                            <div class="px-4">
+                                <button onclick="fetchIncidents()" class="text-gray-400 hover:text-white transition-colors"><i class="ph ph-arrows-clockwise text-lg"></i></button>
+                            </div>
+                        </div>
+                        
+                        <!-- TAB: Timelines -->
+                        <div id="tab-timelines" class="siem-content flex-1 overflow-y-auto p-6 space-y-6 bg-mosp-bg relative block">
+                            <!-- Correlated Incidents injected here via JS -->
+                            <div class="text-center text-gray-500 italic mt-20">
+                                <i class="ph ph-shield-check text-4xl mb-3 opacity-50 block"></i>
+                                No active attack chains detected by correlator.
+                            </div>
+                        </div>
+
+                        <!-- TAB: Triage Queue -->
+                        <div id="tab-triage" class="siem-content flex-1 overflow-y-auto p-0 bg-mosp-bg relative hidden">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="bg-mosp-panel/80 text-gray-400 text-[10px] uppercase tracking-wider font-semibold sticky top-0 z-10 backdrop-blur-md">
+                                    <tr>
+                                        <th class="px-6 py-4">Risk Score</th>
+                                        <th class="px-6 py-4">Incident Title</th>
+                                        <th class="px-6 py-4">Stage</th>
+                                        <th class="px-6 py-4">Target Asset</th>
+                                        <th class="px-6 py-4 text-right">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="triage-queue-body" class="divide-y divide-mosp-border/50 text-gray-300">
+                                    <!-- Injected via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- TAB: SOAR & Tuning -->
+                        <div id="tab-soar" class="siem-content flex-1 overflow-y-auto p-6 bg-mosp-bg relative hidden space-y-6">
+                            <!-- Playbooks -->
+                            <div>
+                                <h3 class="text-sm font-bold text-white mb-4 flex items-center"><i class="ph ph-rocket-launch text-mosp-secondary mr-2 text-xl"></i> Zero-Click Playbooks</h3>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="p-4 border border-mosp-border bg-black/40 rounded flex justify-between items-center">
+                                        <div>
+                                            <p class="text-sm font-bold text-white">Auto-Isolate Network</p>
+                                            <p class="text-[10px] text-gray-400 mt-1">Triggers on Defense Evasion</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                          <input type="checkbox" id="soar-toggle-isolate" class="sr-only peer" onchange="updateSoarConfig()">
+                                          <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-mosp-success"></div>
+                                        </label>
+                                    </div>
+                                    <div class="p-4 border border-mosp-border bg-black/40 rounded flex justify-between items-center">
+                                        <div>
+                                            <p class="text-sm font-bold text-white">Auto-Kill Malicious Process</p>
+                                            <p class="text-[10px] text-gray-400 mt-1">Triggers on Suspicious Execution</p>
+                                        </div>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                          <input type="checkbox" id="soar-toggle-kill" class="sr-only peer" onchange="updateSoarConfig()">
+                                          <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-mosp-success"></div>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- False Positive Tuning -->
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-sm font-bold text-white flex items-center"><i class="ph ph-faders text-mosp-warning mr-2 text-xl"></i> False Positive Tuning</h3>
+                                    <button onclick="promptTuningRule()" class="px-3 py-1.5 bg-mosp-bg border border-mosp-border hover:border-mosp-warning text-xs text-gray-300 hover:text-white rounded transition-colors"><i class="ph ph-plus mr-1"></i> Add Rule</button>
+                                </div>
+                                <div class="overflow-x-auto border border-mosp-border rounded w-full">
+                                    <table class="w-full text-left text-xs whitespace-nowrap">
+                                        <thead class="bg-mosp-panel/80 text-gray-400 text-[10px] uppercase tracking-wider font-semibold">
+                                            <tr>
+                                                <th class="px-4 py-3">Indicator Type</th>
+                                                <th class="px-4 py-3">Value</th>
+                                                <th class="px-4 py-3">Justification</th>
+                                                <th class="px-4 py-3 text-right">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tuning-rules-body" class="divide-y divide-mosp-border/50 text-gray-300 bg-black/20">
+                                            <tr><td colspan="4" class="text-center py-6 text-gray-500 italic">No tuning rules applied.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE_URL = window.location.origin + "/api/v1";
+        const WS_PROTOCOL = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const WS_BASE_URL = `${WS_PROTOCOL}//${window.location.host}/ws`;
+
+        let TENANT_ID = sessionStorage.getItem("MOSP_TENANT_ID");
+        let USER_ID = sessionStorage.getItem("MOSP_USER_ID");
+        let AUTH_TOKEN = sessionStorage.getItem("MOSP_AUTH_TOKEN");
+        let FETCH_HEADERS = { "Content-Type": "application/json" };
+        let wsConnection = null;
+        let eventCount = parseInt(sessionStorage.getItem("MOSP_SIEM_EVENT_COUNT") || "0");
+        let streamCache = JSON.parse(sessionStorage.getItem("MOSP_SIEM_STREAM_CACHE") || "[]");
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!TENANT_ID || !USER_ID) {
+                document.getElementById('auth-overlay').classList.remove('hidden');
+            } else {
+                hydrateHeaders();
+                completeLoginFlow();
+            }
+        });
+
+        function hydrateHeaders() {
+            if (TENANT_ID) FETCH_HEADERS["X-Tenant-ID"] = TENANT_ID;
+            if (USER_ID) FETCH_HEADERS["X-User-ID"] = USER_ID;
+            if (AUTH_TOKEN) FETCH_HEADERS["Authorization"] = `Bearer ${AUTH_TOKEN}`;
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            const t_id = document.getElementById('login-tenant').value.trim();
+            const u_id = document.getElementById('login-user').value.trim();
+            const token = document.getElementById('login-token').value.trim();
+
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin mr-2"></i> Connecting...';
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ tenant_id: t_id, user_id: u_id, auth_token: token })
+                });
+
+                if (res.ok) {
+                    TENANT_ID = t_id; USER_ID = u_id; AUTH_TOKEN = token;
+                    sessionStorage.setItem("MOSP_TENANT_ID", TENANT_ID);
+                    sessionStorage.setItem("MOSP_USER_ID", USER_ID);
+                    sessionStorage.setItem("MOSP_AUTH_TOKEN", AUTH_TOKEN);
+                    hydrateHeaders();
+                    completeLoginFlow();
+                } else {
+                    document.getElementById('login-error').classList.remove('hidden');
+                    btn.innerHTML = 'Enter SIEM Console';
+                }
+            } catch (err) {
+                document.getElementById('login-error').classList.remove('hidden');
+                btn.innerHTML = 'Enter SIEM Console';
+            }
+        }
+
+        function completeLoginFlow() {
+            document.getElementById('display-tenant-id').innerText = TENANT_ID;
+            document.getElementById('auth-overlay').classList.add('opacity-0');
+            
+            // Rehydrate the raw stream from session storage immediately
+            if (streamCache.length > 0) {
+                const stream = document.getElementById('raw-stream');
+                stream.innerHTML = '';
+                document.getElementById('kpi-ingest').innerText = eventCount;
+                
+                // Render from oldest to newest because we prepend new ones
+                [...streamCache].reverse().forEach(cachedHtml => {
+                    stream.insertAdjacentHTML('afterbegin', cachedHtml);
+                });
+            }
+
+            setTimeout(() => {
+                document.getElementById('auth-overlay').classList.add('hidden');
+                document.getElementById('siem-app-container').classList.remove('hidden');
+                setTimeout(() => document.getElementById('siem-app-container').classList.remove('opacity-0'), 50);
+                
+                fetchIncidents();
+                connectWebSocket();
+            }, 500);
+        }
+
+        function connectWebSocket() {
+            // Reusing existing WS endpoint, but we will filter for stream events
+            wsConnection = new WebSocket(`${WS_BASE_URL}/${TENANT_ID}?user_id=${USER_ID}`);
+            wsConnection.onopen = () => {
+                document.getElementById('ws-status-dot').classList.replace('bg-mosp-danger', 'bg-mosp-success');
+                document.getElementById('ws-status-text').innerText = "Live Stream Active";
+                document.getElementById('ws-status-text').classList.replace('text-gray-400', 'text-mosp-success');
+            };
+            wsConnection.onmessage = (event) => {
+                try {
+                    const payload = JSON.parse(event.data);
+                    if (payload.event === "siem_raw_stream") {
+                        appendRawStream(payload.data);
+                    } else if (payload.event === "siem_attack_chain" || payload.event === "soc_incident_alert") {
+                        fetchIncidents(); // Refresh timeline board
+                    }
+                } catch(e) {}
+            };
+            wsConnection.onclose = () => {
+                document.getElementById('ws-status-dot').classList.replace('bg-mosp-success', 'bg-mosp-danger');
+                document.getElementById('ws-status-text').innerText = "Stream Offline";
+                document.getElementById('ws-status-text').classList.replace('text-mosp-success', 'text-gray-400');
+                setTimeout(connectWebSocket, 3000);
+            };
+        }
+
+        function syntaxHighlight(jsonObj) {
+            if (typeof jsonObj !== 'string') {
+                 jsonObj = JSON.stringify(jsonObj, undefined, 2);
+            }
+            jsonObj = jsonObj.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return jsonObj.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                let cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) cls = 'json-key';
+                    else cls = 'json-string';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function appendRawStream(data) {
+            const stream = document.getElementById('raw-stream');
+            if (eventCount === 0 && streamCache.length === 0) stream.innerHTML = ''; // clear empty state
+            
+            eventCount++;
+            document.getElementById('kpi-ingest').innerText = eventCount;
+            sessionStorage.setItem("MOSP_SIEM_EVENT_COUNT", eventCount);
+
+            const timeStr = new Date(data.timestamp || Date.now()).toLocaleTimeString();
+            let actionColor = 'text-mosp-accent border-mosp-accent';
+            let bgCol = 'bg-mosp-accent/10';
+            
+            const evtType = data.event_type || (data.data && data.data.event_type) || "syslog";
+            
+            if (evtType === 'failed_login' || evtType === 'syslog') { actionColor = 'text-mosp-warning border-mosp-warning'; bgCol = 'bg-mosp-warning/10'; }
+            if (evtType === 'successful_login') { actionColor = 'text-mosp-success border-mosp-success'; bgCol = 'bg-mosp-success/10'; }
+            if (evtType === 'suspicious_process' || evtType === 'log_clear') { actionColor = 'text-mosp-danger border-mosp-danger'; bgCol = 'bg-mosp-danger/10'; }
+
+            // Parse inner payload if it's a string
+            let innerPayload = data.payload || data.data;
+            if (typeof innerPayload === 'string') {
+                try { innerPayload = JSON.parse(innerPayload); } catch(e){}
+            }
+
+            const html = `
+                <div class="border-b border-gray-800 pb-2 mb-2 hover:bg-white/5 p-1 transition-colors rounded animate-fadeIn">
+                    <div class="flex justify-between items-center mb-1">
+                        <span class="text-[9px] text-gray-500">${timeStr} | ${(data.asset_id || "SYSTEM").substring(0,8)}</span>
+                        <span class="text-[9px] font-bold uppercase tracking-wider ${actionColor} ${bgCol} px-2 py-0.5 rounded border">${evtType.replace('_', ' ')}</span>
+                    </div>
+                    <pre class="text-[10px] leading-tight overflow-x-hidden whitespace-pre-wrap">${syntaxHighlight(innerPayload)}</pre>
+                </div>
+            `;
+            stream.insertAdjacentHTML('afterbegin', html);
+            
+            // Manage Local Cache state
+            streamCache.unshift(html);
+            if (streamCache.length > 50) streamCache.pop();
+            sessionStorage.setItem("MOSP_SIEM_STREAM_CACHE", JSON.stringify(streamCache));
+            
+            // Keep DOM stream performant
+            if (stream.children.length > 50) stream.removeChild(stream.lastChild);
+        }
+
+        function switchSiemTab(tabId) {
+            document.querySelectorAll('.siem-tab').forEach(el => {
+                el.classList.remove('active', 'text-mosp-secondary', 'border-mosp-secondary');
+                el.classList.add('text-gray-500', 'border-transparent');
+            });
+            document.querySelectorAll('.siem-content').forEach(el => {
+                el.classList.remove('block');
+                el.classList.add('hidden');
+            });
+            
+            const btn = document.querySelector(`button[onclick="switchSiemTab('${tabId}')"]`);
+            if (btn) {
+                btn.classList.remove('text-gray-500', 'border-transparent');
+                btn.classList.add('active', 'text-mosp-secondary', 'border-mosp-secondary');
+            }
+            
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            document.getElementById(`tab-${tabId}`).classList.add('block');
+            
+            if (tabId === 'soar') {
+                fetchSoarConfig();
+                fetchTuningRules();
+            }
+        }
+
+        async function fetchIncidents() {
+            try {
+                // Assuming we expose the SIEM chains on a dedicated endpoint
+                const res = await fetch(`${API_BASE_URL}/siem/chains`, { headers: FETCH_HEADERS });
+                if (res.ok) {
+                    const chains = await res.json();
+                    renderCorrelatorBoard(chains);
+                    renderTriageQueue(chains);
+                } else {
+                    // Fallback to general SOC incidents if chains not implemented fully yet
+                    const res2 = await fetch(`${API_BASE_URL}/soc/incidents`, { headers: FETCH_HEADERS });
+                    if (res2.ok) {
+                         const chains = await res2.json();
+                         renderCorrelatorBoard(chains);
+                         renderTriageQueue(chains);
+                    }
+                }
+            } catch(e) { console.error("SIEM API Error", e); }
+        }
+
+        function renderCorrelatorBoard(chains) {
+            const board = document.getElementById('tab-timelines');
+            if (!chains || chains.length === 0) {
+                 board.innerHTML = `
+                    <div class="text-center text-gray-500 italic mt-20">
+                        <i class="ph ph-shield-check text-4xl mb-3 opacity-50 block"></i>
+                        No active attack chains detected by correlator.
+                    </div>
+                 `;
+                 return;
+            }
+            
+            board.innerHTML = '';
+            document.getElementById('kpi-timelines').innerText = chains.length;
+            
+            let critCount = 0;
+
+            chains.forEach(chain => {
+                if(chain.severity === 'CRITICAL') critCount++;
+                
+                let sevBorder = 'border-mosp-secondary shadow-[0_0_10px_rgba(59,130,246,0.1)]';
+                let sevText = 'text-mosp-secondary bg-mosp-secondary/20';
+                
+                if(chain.severity === 'CRITICAL') {
+                    sevBorder = 'border-mosp-danger shadow-[0_0_15px_rgba(255,42,42,0.2)]';
+                    sevText = 'text-mosp-danger bg-mosp-danger/20';
+                } else if (chain.severity === 'HIGH') {
+                    sevBorder = 'border-mosp-warning shadow-[0_0_10px_rgba(255,234,0,0.1)]';
+                    sevText = 'text-mosp-warning bg-mosp-warning/20';
+                }
+
+                // Generate Event Nodes
+                let eventsHtml = '';
+                if (chain.events && chain.events.length > 0) {
+                    chain.events.forEach((ev, idx) => {
+                        let icon = 'ph-info';
+                        let iconCol = 'text-gray-400';
+                        if (ev.type === 'failed_login') { icon = 'ph-key'; iconCol = 'text-mosp-warning'; }
+                        if (ev.type === 'successful_login') { icon = 'ph-user-check'; iconCol = 'text-mosp-success'; }
+                        if (ev.type === 'suspicious_process') { icon = 'ph-terminal-window'; iconCol = 'text-mosp-danger'; }
+                        if (ev.type === 'log_clear') { icon = 'ph-eraser'; iconCol = 'text-mosp-danger'; }
+                        
+                        eventsHtml += `
+                            <div class="relative flex items-start mb-4 group z-10">
+                                <div class="w-10 h-10 rounded-full bg-mosp-bg border-2 border-gray-600 flex items-center justify-center flex-shrink-0 group-hover:border-mosp-accent transition-colors">
+                                    <i class="ph ${icon} ${iconCol} text-lg"></i>
+                                </div>
+                                <div class="ml-4 bg-black/40 border border-mosp-border rounded p-3 flex-1 flex justify-between items-start group-hover:border-mosp-border/80 transition-colors">
+                                    <div>
+                                        <div class="flex items-center mb-1">
+                                            <span class="text-xs font-bold text-white uppercase tracking-wider mr-3">${ev.type.replace('_', ' ')}</span>
+                                            <span class="text-[9px] text-gray-500 font-mono">${new Date(ev.timestamp).toLocaleTimeString()}</span>
+                                        </div>
+                                        <p class="text-xs text-gray-400 font-mono break-all line-clamp-2" title="${ev.details}">${ev.details}</p>
+                                    </div>
+                                    <button onclick="quickTune('${ev.type}', '${ev.details.replace(/'/g, "\\'")}')" class="opacity-0 group-hover:opacity-100 px-2 py-1 bg-mosp-bg border border-mosp-warning text-mosp-warning rounded text-[9px] font-bold transition-all ml-2 flex-shrink-0 whitespace-nowrap"><i class="ph ph-faders mr-1"></i> Tune</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                     eventsHtml = `
+                     <div class="relative flex items-start mb-4 group z-10">
+                         <div class="w-10 h-10 rounded-full bg-mosp-bg border-2 border-gray-600 flex items-center justify-center flex-shrink-0 group-hover:border-mosp-accent transition-colors">
+                             <i class="ph ph-warning-octagon text-mosp-warning text-lg"></i>
+                         </div>
+                         <div class="ml-4 bg-black/40 border border-mosp-border rounded p-3 flex-1">
+                             <p class="text-xs text-gray-400 font-mono break-all" title="${chain.description}">${chain.description}</p>
+                         </div>
+                     </div>`;
+                }
+
+                const html = `
+                    <div class="glass-panel p-5 rounded-lg border-2 ${sevBorder} relative overflow-hidden mb-6">
+                        <div class="flex justify-between items-start mb-6 z-10 relative">
+                            <div>
+                                <h3 class="text-lg font-bold text-white">${chain.title}</h3>
+                                <p class="text-xs text-gray-400 font-mono mt-1">Asset: ${chain.asset_id.substring(0,8)} | Chain ID: ${chain.id.substring(0,8)}</p>
+                            </div>
+                            <span class="px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded border ${sevBorder.split(' ')[0]} ${sevText}">${chain.severity} (Score: ${chain.risk_score})</span>
+                        </div>
+                        
+                        <div class="mb-6 relative">
+                            <div class="timeline-connector"></div>
+                            ${eventsHtml}
+                        </div>
+                        
+                        <div class="border-t border-mosp-border pt-3 flex justify-between items-center z-10 relative">
+                            <span class="text-xs text-gray-400">Stage: <strong class="text-white">${chain.attack_stage}</strong></span>
+                            <div class="space-x-2">
+                                <button class="px-3 py-1.5 bg-mosp-bg border border-mosp-border text-gray-300 hover:text-white rounded text-xs transition-colors" onclick="alert('Viewing raw logs')">Raw Logs</button>
+                                <button class="px-3 py-1.5 bg-mosp-danger/20 border border-mosp-danger text-mosp-danger hover:bg-mosp-danger hover:text-white rounded text-xs font-bold transition-colors" onclick="containThreat('${chain.id}')">${chain.status === 'CONTAINED' ? 'Asset Isolated' : 'Contain Threat'}</button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                board.insertAdjacentHTML('beforeend', html);
+            });
+            
+            document.getElementById('kpi-critical').innerText = critCount;
+        }
+
+        function renderTriageQueue(chains) {
+            const tbody = document.getElementById('triage-queue-body');
+            tbody.innerHTML = '';
+            
+            if (!chains || chains.length === 0) {
+                 tbody.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500 italic">Queue is empty.</td></tr>`;
+                 return;
+            }
+
+            chains.forEach(chain => {
+                let sevCol = 'text-gray-400';
+                if(chain.severity === 'CRITICAL') sevCol = 'text-mosp-danger font-bold';
+                else if(chain.severity === 'HIGH') sevCol = 'text-mosp-warning font-bold';
+                else if(chain.severity === 'MEDIUM') sevCol = 'text-mosp-secondary font-bold';
+
+                let statCol = chain.status === 'CONTAINED' ? 'text-mosp-success' : 'text-mosp-warning';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-white/5 transition-colors border-b border-mosp-border/50">
+                        <td class="px-6 py-3 font-mono text-white text-lg font-bold">${chain.risk_score}</td>
+                        <td class="px-6 py-3">
+                            <p class="text-sm text-white font-bold truncate max-w-xs">${chain.title}</p>
+                            <p class="text-[10px] ${sevCol} mt-0.5">${chain.severity}</p>
+                        </td>
+                        <td class="px-6 py-3 text-xs text-gray-400 font-mono">${chain.attack_stage}</td>
+                        <td class="px-6 py-3 text-xs text-mosp-secondary font-mono">${chain.asset_id.substring(0,8)}</td>
+                        <td class="px-6 py-3 text-right text-xs font-bold ${statCol}">${chain.status}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function fetchSoarConfig() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/soar/config`, { headers: FETCH_HEADERS });
+                if (res.ok) {
+                    const config = await res.json();
+                    document.getElementById('soar-toggle-isolate').checked = config.auto_isolate_enabled;
+                    document.getElementById('soar-toggle-kill').checked = config.auto_kill_enabled;
+                }
+            } catch(e) {}
+        }
+
+        async function updateSoarConfig() {
+            const iso = document.getElementById('soar-toggle-isolate').checked;
+            const kill = document.getElementById('soar-toggle-kill').checked;
+            try {
+                await fetch(`${API_BASE_URL}/siem/soar/config`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({ auto_isolate_enabled: iso, auto_kill_enabled: kill })
+                });
+            } catch(e) {}
+        }
+
+        async function fetchTuningRules() {
+            const tbody = document.getElementById('tuning-rules-body');
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/tuning`, { headers: FETCH_HEADERS });
+                if (res.ok) {
+                    const rules = await res.json();
+                    tbody.innerHTML = '';
+                    if (rules.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="4" class="text-center py-6 text-gray-500 italic">No tuning rules applied.</td></tr>`;
+                        return;
+                    }
+                    rules.forEach(r => {
+                        tbody.innerHTML += `
+                            <tr class="border-b border-mosp-border/50">
+                                <td class="px-4 py-2 font-mono text-mosp-secondary">${r.indicator_type}</td>
+                                <td class="px-4 py-2 text-white font-mono">${r.indicator_value}</td>
+                                <td class="px-4 py-2 text-gray-400 truncate max-w-[200px]" title="${r.reason}">${r.reason}</td>
+                                <td class="px-4 py-2 text-right">
+                                    <button onclick="removeTuningRule('${r.id}')" class="text-mosp-danger hover:text-white transition-colors"><i class="ph ph-trash text-lg"></i></button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+            } catch(e) {}
+        }
+
+        async function promptTuningRule() {
+            const type = prompt("Enter Indicator Type (ip_address, process_name, username):", "process_name");
+            if (!type) return;
+            const val = prompt("Enter Indicator Value (e.g., '192.168.1.5' or 'psexec.exe'):");
+            if (!val) return;
+            const reason = prompt("Enter justification for whitelisting:", "Authorized administrative behavior");
+            
+            submitTuningRule(type, val, reason || "N/A");
+        }
+
+        function quickTune(eventType, details) {
+            let type = '';
+            let val = '';
+            
+            // Basic heuristic to guess what they want to whitelist based on the event string
+            if (eventType === 'suspicious_process') {
+                type = 'process_name';
+                // Extract process name natively formatted by agent
+                const match = details.match(/^([\w\.]+)\s+executed:/);
+                val = match ? match[1] : details;
+            } else if (eventType === 'failed_login') {
+                type = 'ip_address';
+                const match = details.match(/from\s+([0-9\.]+)/);
+                val = match ? match[1] : '';
+            } else if (eventType === 'log_clear') {
+                type = 'username';
+                const match = details.match(/User\s+([^\s]+)\s+cleared/);
+                val = match ? match[1] : '';
+            }
+            
+            const finalVal = prompt(`Whitelist ${type}? Enter value to ignore:`, val);
+            if(finalVal) {
+                const reason = prompt("Reason for tuning this out?", "False Positive");
+                submitTuningRule(type, finalVal, reason);
+            }
+        }
+
+        async function submitTuningRule(type, val, reason) {
+            try {
+                await fetch(`${API_BASE_URL}/siem/tuning`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({ indicator_type: type, indicator_value: val, reason: reason })
+                });
+                fetchTuningRules();
+            } catch(e) {}
+        }
+
+        async function removeTuningRule(id) {
+            if(!confirm("Remove this tuning rule? The SIEM will resume alerting on this indicator.")) return;
+            try {
+                await fetch(`${API_BASE_URL}/siem/tuning/${id}`, { method: 'DELETE', headers: FETCH_HEADERS });
+                fetchTuningRules();
+            } catch(e) {}
+        }
+
+        async function containThreat(incidentId) {
+            if (!confirm("Are you sure you want to contain this threat? This will isolate the affected asset.")) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/chains/${chainId}/contain`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS
+                });
+                if (res.ok) {
+                    alert("Containment command issued successfully.");
+                    fetchIncidents();
+                } else {
+                    alert("Failed to issue containment command.");
+                }
+            } catch(e) { alert("Error issuing containment command."); }
+        }
+    </script>
+</body>
+</html>
