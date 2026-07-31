@@ -828,7 +828,7 @@ async def serve_homepage():
         return JSONResponse(status_code=404, content={"error": "index.html not found in server directory."})
     return FileResponse("index.html")
 
-@app.get("/dashboard.html")
+@app.get("/dashboard")
 async def serve_dashboard():
     if not os.path.exists("dashboard.html"):
         return JSONResponse(status_code=404, content={"error": "dashboard.html not found in server directory."})
