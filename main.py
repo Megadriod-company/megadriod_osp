@@ -39,8 +39,11 @@ app.add_middleware(
 
 # Global Redis Pool
 redis_client: redis.Redis = None
-# Fetches securely from the hosting environment (Defaults to local development instance)
-REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
+# Fetches securely from the hosting environment, falling back to the test instance
+REDIS_URL: str = os.getenv(
+    'REDIS_URL', 
+    "rediss://default:gQAAAAAAAqfcAAIgcDE0NzJjMjZiNWI3N2Y0ZDEyOWZkZjE0Mzc3MGUyZWJhMw@better-octopus-174044.upstash.io:6379"
+)
 # Enterprise Billing Configuration (Paystack)
 
 @app.on_event("startup")
@@ -55,6 +58,12 @@ async def startup_event():
         )
         await redis_client.ping()
         logger.info("M-OSP Backend connected to Redis Primary Datastore successfully via TLS.")
+        
+        # Start SIEM Correlation Worker
+        asyncio.create_task(siem_correlation_worker())
+        
+        # Start Network Traffic Analysis (NTA) Engine
+        asyncio.create_task(nta_analysis_worker())
     except Exception as e:
         logger.critical(f"FATAL: Failed to connect to Redis: {e}. M-OSP requires Redis to function.")
 
@@ -273,6 +282,17 @@ class NetworkDiagnosticRequest(BaseModel):
 
 class SystemDiagnosticRequest(NetworkDiagnosticRequest):
     pass
+
+class TuningRule(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    indicator_type: str  # 'ip_address', 'process_name', 'username'
+    indicator_value: str
+    reason: str
+    created_at: str = Field(default_factory=lambda: datetime.utcnow().isoformat())
+
+class SoarConfig(BaseModel):
+    auto_isolate_enabled: bool = True
+    auto_kill_enabled: bool = True
 # ==========================================
 # Engine section
 # ==========================================
@@ -336,6 +356,468 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 
+# =====================================================================
+# REDIS STREAM INGESTION & SIEM ENGINE
+# =====================================================================
+SOC_STREAM_KEY = "mosp:stream:telemetry"
+ARCHIVE_DIR = "enterprise_vault/siem_archive"
+os.makedirs(ARCHIVE_DIR, exist_ok=True)
+
+async def siem_cold_storage_archiver():
+    """
+    Background worker that offloads old stream events to compressed disk storage
+    to prevent Redis memory limits from being reached (Infinite Log Retention).
+    """
+    logger.info("M-OSP SIEM Archiver Online.")
+    # In production, you might want this to run daily. Running frequently for dev/testing.
+    while True:
+        try:
+            if not redis_client:
+                await asyncio.sleep(60)
+                continue
+
+            # Get stream length
+            stream_len = await redis_client.xlen(SOC_STREAM_KEY)
+            
+            # Retain the last 10,000 events in memory, archive the rest
+            retention_limit = 10000
+            
+            if stream_len > retention_limit:
+                # Calculate how many to archive
+                archive_count = stream_len - retention_limit
+                
+                # Fetch the oldest events
+                # XRANGE uses IDs. "-" is minimum, "+" is maximum. We use a high count.
+                old_events = await redis_client.xrange(SOC_STREAM_KEY, min="-", max="+", count=archive_count)
+                
+                if old_events:
+                    logger.info(f"Archiving {len(old_events)} SIEM events to cold storage...")
+                    
+                    # Group events by Tenant and Date for organized storage
+                    archive_data = {}
+                    last_id_to_trim = None
+                    
+                    for event_id, data in old_events:
+                        tenant_id = data.get("tenant_id", "system")
+                        # Event IDs typically start with the millisecond timestamp
+                        ts_ms = int(event_id.split("-")[0])
+                        date_str = datetime.utcfromtimestamp(ts_ms / 1000.0).strftime('%Y-%m-%d')
+                        
+                        key = f"{tenant_id}_{date_str}"
+                        if key not in archive_data:
+                            archive_data[key] = []
+                            
+                        # Format the event for JSON
+                        formatted_event = {
+                            "stream_id": event_id,
+                            "tenant_id": tenant_id,
+                            "asset_id": data.get("asset_id"),
+                            "event_type": data.get("event_type"),
+                            "payload": data.get("payload")
+                        }
+                        archive_data[key].append(formatted_event)
+                        last_id_to_trim = event_id
+                    
+                    # Write to compressed files
+                    import gzip
+                    for key, events in archive_data.items():
+                        tenant_id, date_str = key.split("_", 1)
+                        tenant_dir = os.path.join(ARCHIVE_DIR, tenant_id)
+                        os.makedirs(tenant_dir, exist_ok=True)
+                        
+                        file_path = os.path.join(tenant_dir, f"siem_archive_{date_str}.json.gz")
+                        
+                        # Append to existing archive or create new
+                        existing_events = []
+                        if os.path.exists(file_path):
+                            try:
+                                with gzip.open(file_path, "rt", encoding="utf-8") as f:
+                                    existing_events = json.load(f)
+                            except Exception as e:
+                                logger.error(f"Error reading existing archive {file_path}: {e}")
+                                
+                        all_events = existing_events + events
+                        
+                        with gzip.open(file_path, "wt", encoding="utf-8") as f:
+                            json.dump(all_events, f)
+                            
+                    # Trim the stream in Redis to remove the archived events
+                    if last_id_to_trim:
+                         # XTRIM using MINID removes entries older than the specified ID.
+                         # Since we want to remove up to last_id_to_trim (inclusive),
+                         # and minid trims *below* the given ID, we need the next ID.
+                         # A simple approximation is adding 1 to the sequence number.
+                         ms, seq = last_id_to_trim.split("-")
+                         next_id = f"{ms}-{int(seq) + 1}"
+                         await redis_client.xtrim(SOC_STREAM_KEY, minid=next_id)
+                         logger.info("Stream trimmed.")
+
+        except Exception as e:
+            logger.error(f"SIEM Archiver Error: {e}")
+            
+        # Run archive check every hour
+        await asyncio.sleep(3600)
+
+async def siem_correlation_worker():
+    """
+    Background worker consuming the Redis Stream to detect multi-stage attacks:
+    Rule 1: Brute Force -> Account Takeover
+    Rule 2: Log Clear (Event 1102) -> Defense Evasion
+    Rule 3: Suspicious Execution -> Auto-Containment (SOAR)
+    """
+    logger.info("M-OSP SIEM Correlation Worker Online.")
+    last_id = "$"  # Read only new stream entries
+    
+    while True:
+        try:
+            if not redis_client:
+                await asyncio.sleep(5)
+                continue
+
+            # Read new stream events
+            entries = await redis_client.xread({SOC_STREAM_KEY: last_id}, count=50, block=2000)
+            
+            if not entries:
+                await asyncio.sleep(0.5)
+                continue
+
+            for stream_name, events in entries:
+                for event_id, data in events:
+                    last_id = event_id
+                    tenant_id = data.get("tenant_id")
+                    event_type = data.get("event_type")
+                    asset_id = data.get("asset_id")
+                    payload = json.loads(data.get("payload", "{}"))
+
+                    # Fetch False Positive Tuning Rules (Whitelists)
+                    tuning_keys = await redis_client.keys(f"tenant:{tenant_id}:siem_tuning:*")
+                    whitelisted_ips = set()
+                    whitelisted_procs = set()
+                    whitelisted_users = set()
+                    for tk in tuning_keys:
+                        rule_data = await redis_client.get(tk)
+                        if rule_data:
+                            rule = json.loads(rule_data)
+                            if rule["indicator_type"] == "ip_address": whitelisted_ips.add(rule["indicator_value"])
+                            elif rule["indicator_type"] == "process_name": whitelisted_procs.add(rule["indicator_value"])
+                            elif rule["indicator_type"] == "username": whitelisted_users.add(rule["indicator_value"])
+                            
+                    # Fetch SOAR Configuration (Zero-Click Playbook toggles)
+                    soar_raw = await redis_client.get(f"tenant:{tenant_id}:soar_config")
+                    soar_config = json.loads(soar_raw) if soar_raw else {"auto_isolate_enabled": True, "auto_kill_enabled": True}
+
+                    # --- CORRELATION RULE 1: Failed Logins & Brute Force ---
+                    if event_type == "failed_login":
+                        username = payload.get("username", "unknown")
+                        ip_addr = payload.get("ip_address", "127.0.0.1")
+                        
+                        # False Positive Tuning Check
+                        if ip_addr in whitelisted_ips or username in whitelisted_users:
+                            continue
+                            
+                        counter_key = f"tenant:{tenant_id}:bf_counter:{asset_id}:{username}"
+
+                        count = await redis_client.incr(counter_key)
+                        if count == 1:
+                            await redis_client.expire(counter_key, 300)  # 5 minute rolling window
+
+                        if count >= 5:
+                            await trigger_soc_incident(
+                                tenant_id=tenant_id,
+                                asset_id=asset_id,
+                                title="Brute Force / Password Spray Detected",
+                                severity="HIGH",
+                                description=f"Multiple authentication failures ({count} attempts) for user '{username}' from IP {ip_addr}.",
+                                attack_stage="Initial Access",
+                                event_detail={"type": "failed_login", "details": f"Attempt {count} from {ip_addr}", "timestamp": datetime.utcnow().isoformat()}
+                            )
+
+                    # --- CORRELATION RULE 2: Defense Evasion (Event ID 1102 Log Clear) ---
+                    elif event_type == "log_clear":
+                        username = payload.get("username", "System")
+                        
+                        # False Positive Tuning Check
+                        if username in whitelisted_users:
+                            continue
+                            
+                        await trigger_soc_incident(
+                            tenant_id=tenant_id,
+                            asset_id=asset_id,
+                            title="Audit Log Evaded / Cleared",
+                            severity="CRITICAL",
+                            description=f"Security Event Log was cleared by user '{username}' on asset {asset_id}.",
+                            attack_stage="Defense Evasion",
+                            event_detail={"type": "log_clear", "details": f"User {username} cleared Security logs.", "timestamp": datetime.utcnow().isoformat()}
+                        )
+                        # AUTO SOAR: Instantly isolate endpoint on Defense Evasion
+                        if soar_config.get("auto_isolate_enabled", True):
+                            await auto_isolate_asset(tenant_id, asset_id, "Security Log Erasure Detected")
+
+                    # --- CORRELATION RULE 3: Malware / Living-Off-The-Land ---
+                    elif event_type == "suspicious_process":
+                        proc_name = payload.get("process_name", "unknown.exe")
+                        cmd_line = payload.get("command_line", "")
+                        
+                        # False Positive Tuning Check
+                        if proc_name in whitelisted_procs:
+                            continue
+                            
+                        severity = "HIGH"
+                        if "encodedcommand" in cmd_line.lower() or "vssadmin delete shadows" in cmd_line.lower():
+                            severity = "CRITICAL"
+
+                        incident_id = await trigger_soc_incident(
+                            tenant_id=tenant_id,
+                            asset_id=asset_id,
+                            title=f"Suspicious Process Execution: {proc_name}",
+                            severity=severity,
+                            description=f"Process executed with suspicious command line arguments: {cmd_line}",
+                            attack_stage="Execution / Persistence",
+                            event_detail={"type": "suspicious_process", "details": f"{proc_name} executed: {cmd_line}", "timestamp": datetime.utcnow().isoformat()}
+                        )
+
+                        if severity == "CRITICAL":
+                            # AUTO SOAR: Kill malicious process via WebSocket
+                            if soar_config.get("auto_kill_enabled", True):
+                                soar_payload = {
+                                    "type": "kill_process",
+                                    "task_id": f"soar_{incident_id}",
+                                    "target_asset_id": asset_id,
+                                    "data": {"process_name": proc_name, "pid": payload.get("pid")}
+                                }
+                                await manager.route_to_target(tenant_id, asset_id, soar_payload)
+
+        except Exception as e:
+            logger.error(f"SIEM Worker Loop Error: {e}")
+            await asyncio.sleep(2)
+
+
+# =====================================================================
+# NETWORK TRAFFIC ANALYSIS (NTA) ENGINE
+# =====================================================================
+async def nta_analysis_worker():
+    """
+    Background worker that analyzes synthetic network probes for anomalous traffic patterns.
+    - Beaconing Analyzer: Detects malware C2 calling home on regular intervals.
+    - East-West Monitor: Flags unexpected internal lateral movement (SMB, RDP, WinRM).
+    """
+    logger.info("M-OSP NTA Engine Online.")
+    
+    # Track historical connection frequency across the fleet for Beaconing Analysis
+    # Structure: { "asset_id_remote_ip": [timestamp1, timestamp2, ...] }
+    connection_history = {}
+    
+    # Known high-risk ports for lateral movement
+    LATERAL_PORTS = [445, 3389, 5985, 5986, 135, 139]
+    
+    while True:
+        try:
+            if not redis_client:
+                await asyncio.sleep(30)
+                continue
+                
+            # Scan all active network probes
+            keys = await redis_client.keys("tenant:*:network_probe:*")
+            
+            for key in keys:
+                tenant_id = key.split(":")[1]
+                data_raw = await redis_client.get(key)
+                if not data_raw:
+                    continue
+                    
+                probe = json.loads(data_raw)
+                asset_id = probe.get("asset_id")
+                connections = probe.get("top_connections", [])
+                
+                now = datetime.utcnow()
+                
+                for conn in connections:
+                    remote_ip = conn.get("remote_ip")
+                    remote_port = conn.get("remote_port")
+                    proc_name = conn.get("process_name", "Unknown").lower()
+                    
+                    if not remote_ip or remote_ip.startswith("127.") or remote_ip.startswith("169.254."):
+                        continue
+                        
+                    # --- 1. EAST-WEST LATERAL MOVEMENT DETECTION ---
+                    # Check if the connection is internal (RFC1918) and targeting a critical administration port
+                    is_internal = remote_ip.startswith("10.") or remote_ip.startswith("192.168.") or (remote_ip.startswith("172.") and 16 <= int(remote_ip.split(".")[1]) <= 31)
+                    
+                    if is_internal and remote_port in LATERAL_PORTS:
+                        # Exclude normal SYSTEM processes to reduce false positives
+                        if proc_name not in ["system", "svchost.exe", "lsass.exe", "services.exe"]:
+                            incident_id = await trigger_soc_incident(
+                                tenant_id=tenant_id,
+                                asset_id=asset_id,
+                                title=f"Suspicious Lateral Movement ({proc_name} -> Port {remote_port})",
+                                severity="HIGH",
+                                description=f"Process '{proc_name}' initiated an internal connection to {remote_ip}:{remote_port}. This port is commonly used for lateral movement.",
+                                attack_stage="Lateral Movement",
+                                event_detail={"type": "lateral_movement", "details": f"Connection to {remote_ip}:{remote_port} by {proc_name}", "timestamp": now.isoformat()}
+                            )
+                            # Alert NTA Dashboard
+                            await manager.broadcast_to_tenant(tenant_id, {
+                                "event": "nta_alert",
+                                "data": {
+                                    "asset_id": asset_id,
+                                    "type": "Lateral Movement",
+                                    "severity": "HIGH",
+                                    "details": f"{proc_name} -> {remote_ip}:{remote_port}",
+                                    "timestamp": now.isoformat()
+                                }
+                            })
+                            continue # Skip beaconing analysis for lateral movement
+                            
+                    # --- 2. BEACONING ANALYZER (C2 DETECTION) ---
+                    # Ignore common chatty applications and browsers
+                    if proc_name in ["chrome.exe", "msedge.exe", "firefox.exe", "teams.exe", "onedrive.exe", "system"]:
+                        continue
+                        
+                    history_key = f"{asset_id}_{remote_ip}"
+                    if history_key not in connection_history:
+                        connection_history[history_key] = []
+                        
+                    connection_history[history_key].append(now)
+                    
+                    # Keep only last 10 connections for math
+                    if len(connection_history[history_key]) > 10:
+                        connection_history[history_key].pop(0)
+                        
+                    # Calculate variance if we have enough data points (e.g., 5 connections)
+                    if len(connection_history[history_key]) >= 5:
+                        intervals = []
+                        for i in range(1, len(connection_history[history_key])):
+                            delta = (connection_history[history_key][i] - connection_history[history_key][i-1]).total_seconds()
+                            intervals.append(delta)
+                            
+                        # If the intervals are highly consistent (low variance), it's likely a beacon
+                        # E.g., calling home exactly every 60 seconds.
+                        avg_interval = sum(intervals) / len(intervals)
+                        if avg_interval > 0:
+                            # Calculate variance
+                            variance = sum((x - avg_interval) ** 2 for x in intervals) / len(intervals)
+                            
+                            # Extremely low variance indicates programmatic beaconing
+                            if variance < 2.0 and avg_interval > 10: # At least 10s between beacons to ignore rapid bursts
+                                await trigger_soc_incident(
+                                    tenant_id=tenant_id,
+                                    asset_id=asset_id,
+                                    title=f"Potential Malware C2 Beaconing Detected",
+                                    severity="CRITICAL",
+                                    description=f"Process '{proc_name}' is beaconing to {remote_ip} consistently every {avg_interval:.1f} seconds.",
+                                    attack_stage="Command and Control",
+                                    event_detail={"type": "beaconing", "details": f"Beacon to {remote_ip} by {proc_name}", "timestamp": now.isoformat()}
+                                )
+                                # Alert NTA Dashboard
+                                await manager.broadcast_to_tenant(tenant_id, {
+                                    "event": "nta_alert",
+                                    "data": {
+                                        "asset_id": asset_id,
+                                        "type": "C2 Beaconing",
+                                        "severity": "CRITICAL",
+                                        "details": f"{proc_name} -> {remote_ip} (~{avg_interval:.1f}s intervals)",
+                                        "timestamp": now.isoformat()
+                                    }
+                                })
+                                # Clear history to prevent alert flooding
+                                connection_history[history_key] = []
+                                
+            # Cleanup old connection history to prevent memory leak
+            thirty_mins_ago = datetime.utcnow() - timedelta(minutes=30)
+            for k in list(connection_history.keys()):
+                if connection_history[k] and connection_history[k][-1] < thirty_mins_ago:
+                    del connection_history[k]
+
+        except Exception as e:
+            logger.error(f"NTA Worker Loop Error: {e}")
+            
+        await asyncio.sleep(30) # Run analysis every 30 seconds
+
+async def trigger_soc_incident(tenant_id: str, asset_id: str, title: str, severity: str, description: str, attack_stage: str, event_detail: dict = None) -> str:
+    """Generates an incident, scores risk, saves to Redis, and broadcasts to dashboard."""
+    # Find existing open chain for this asset to correlate into
+    chain_keys = await redis_client.keys(f"tenant:{tenant_id}:siem_chain:{asset_id}:*")
+    active_chain_id = None
+    chain_data = None
+    
+    for k in chain_keys:
+        raw = await redis_client.get(k)
+        if raw:
+            c = json.loads(raw)
+            if c.get("status") == "OPEN":
+                active_chain_id = c["id"]
+                chain_data = c
+                break
+                
+    if active_chain_id and chain_data:
+        # Update existing chain
+        incident_id = active_chain_id
+        if severity == "CRITICAL": chain_data["severity"] = "CRITICAL" # Escalate
+        chain_data["title"] = f"Correlated Attack Chain (Active)"
+        chain_data["attack_stage"] = attack_stage
+        if event_detail:
+            chain_data["events"].append(event_detail)
+            
+        await redis_client.set(f"tenant:{tenant_id}:siem_chain:{asset_id}:{incident_id}", json.dumps(chain_data))
+    else:
+        # Create new chain
+        incident_id = f"CHN-{datetime.utcnow().strftime('%Y%m%d')}-{str(uuid.uuid4())[:6].upper()}"
+        
+        # Calculate Impact vs Likelihood
+        asset_raw = await redis_client.get(f"tenant:{tenant_id}:asset:{asset_id}")
+        asset_crit = 2
+        if asset_raw:
+            asset_crit = json.loads(asset_raw).get("criticality", 2)
+            
+        severity_weights = {"LOW": 10, "MEDIUM": 30, "HIGH": 60, "CRITICAL": 100}
+        risk_score = min(100, int(severity_weights.get(severity, 30) * (asset_crit / 2)))
+
+        chain_data = {
+            "id": incident_id,
+            "tenant_id": tenant_id,
+            "asset_id": asset_id,
+            "title": title,
+            "severity": severity,
+            "risk_score": risk_score,
+            "attack_stage": attack_stage,
+            "description": description,
+            "status": "OPEN",
+            "events": [event_detail] if event_detail else [],
+            "created_at": datetime.utcnow().isoformat()
+        }
+
+        # Store incident in Redis
+        await redis_client.set(f"tenant:{tenant_id}:siem_chain:{asset_id}:{incident_id}", json.dumps(chain_data))
+    
+    # Broadcast to dashboard WebSocket
+    await manager.broadcast_to_tenant(tenant_id, {
+        "event": "siem_attack_chain",
+        "data": chain_data
+    })
+    
+    return incident_id
+
+
+async def auto_isolate_asset(tenant_id: str, asset_id: str, reason: str):
+    """SOAR Action: Dispatches automatic host isolation via WebSocket."""
+    isolate_command = {
+        "type": "execute_powershell",
+        "task_id": f"soar_isolate_{str(uuid.uuid4())[:6]}",
+        "target_asset_id": asset_id,
+        "data": {
+            "command": "New-NetFirewallRule -DisplayName 'MOSP_SOAR_ISOLATION' -Direction Outbound -Action Block -Enabled True"
+        }
+    }
+    await manager.route_to_target(tenant_id, asset_id, isolate_command)
+    
+    # Mark asset state as Compromised
+    asset_key = f"tenant:{tenant_id}:asset:{asset_id}"
+    asset_raw = await redis_client.get(asset_key)
+    if asset_raw:
+        asset_data = json.loads(asset_raw)
+        asset_data["status"] = "Compromised"
+        await redis_client.set(asset_key, json.dumps(asset_data))
+
 # ==========================================
 # api section
 # ==========================================
@@ -346,11 +828,17 @@ async def serve_homepage():
         return JSONResponse(status_code=404, content={"error": "index.html not found in server directory."})
     return FileResponse("index.html")
 
-@app.get("/dashboard")
+@app.get("/dashboard.html")
 async def serve_dashboard():
     if not os.path.exists("dashboard.html"):
         return JSONResponse(status_code=404, content={"error": "dashboard.html not found in server directory."})
     return FileResponse("dashboard.html")
+
+@app.get("/siem.html")
+async def serve_siem():
+    if not os.path.exists("siem.html"):
+        return JSONResponse(status_code=404, content={"error": "siem.html not found in server directory."})
+    return FileResponse("siem.html")
 
 @app.get("/logo.png")
 async def serve_logo():
@@ -418,11 +906,57 @@ async def websocket_endpoint(websocket: WebSocket, tenant_id: str, user_id: str,
                     if payload.get("event") == "process_list":
                         proc_key = f"tenant:{tenant_id}:processes:{payload.get('asset_id', user_id)}"
                         await redis_client.setex(proc_key, 60, json.dumps(payload.get("data", [])))
-                        
-                        # ENTERPRISE FIX: Halt execution. Trap the heavy process payload at the 
-                        # backend and do NOT broadcast to the UI to prevent browser memory crashes.
                         continue
+                    
+                    if payload.get("event") == "siem_log" and redis_client:
+                        # Extract the inner event type and data mapped by the agent
+                        siem_data = payload.get("data", {})
+                        event_type = siem_data.get("event_type", "unknown")
+                        event_payload = siem_data.get("data", {})
                         
+                        stream_entry = {
+                            "tenant_id": tenant_id,
+                            "asset_id": payload.get("asset_id", user_id),
+                            "event_type": event_type,
+                            "payload": json.dumps(event_payload)
+                        }
+                        
+                        # Add to Redis Stream for the background correlator worker to consume
+                        await redis_client.xadd("mosp:stream:telemetry", stream_entry, maxlen=50000)
+                        
+                        # Broadcast immediately to any connected SIEM dashboards
+                        await manager.broadcast_to_tenant(tenant_id, {
+                            "event": "siem_raw_stream",
+                            "data": {
+                                "timestamp": datetime.utcnow().isoformat(),
+                                "asset_id": stream_entry["asset_id"],
+                                "event_type": stream_entry["event_type"],
+                                "payload": stream_entry["payload"]
+                            }
+                        })
+                        
+                    # --- NEW: Route all standard syslog alerts to the SIEM Firehose ---
+                    if payload.get("event") == "syslog" and redis_client:
+                        syslog_data = payload.get("data", {})
+                        stream_entry = {
+                            "tenant_id": tenant_id,
+                            "asset_id": payload.get("asset_id", user_id),
+                            "event_type": "syslog",
+                            "payload": json.dumps(syslog_data)
+                        }
+                        await redis_client.xadd("mosp:stream:telemetry", stream_entry, maxlen=50000)
+                        
+                        await manager.broadcast_to_tenant(tenant_id, {
+                            "event": "siem_raw_stream",
+                            "data": {
+                                "timestamp": payload.get("timestamp", datetime.utcnow().isoformat()),
+                                "asset_id": stream_entry["asset_id"],
+                                "event_type": "syslog",
+                                "payload": stream_entry["payload"]
+                            }
+                        })
+                        
+                    # Standard broadcast for general dashboard alerts/telemetry
                     await manager.broadcast_to_tenant(tenant_id, payload, sender_id=user_id)
                     
             except json.JSONDecodeError:
@@ -836,6 +1370,87 @@ async def get_vulnerabilities(x_tenant_id: str = Header(None)):
         if data:
             vulns.extend(json.loads(data))
     return vulns
+
+# --- SOC & SIEM API ---
+@app.get("/api/v1/siem/chains")
+async def get_siem_chains(x_tenant_id: str = Header(None)):
+    """Retrieves active SIEM correlated attack chains for the SOC dashboard."""
+    if not redis_client or not x_tenant_id:
+        return []
+    
+    keys = await redis_client.keys(f"tenant:{x_tenant_id}:siem_chain:*")
+    chains = []
+    for k in keys:
+        data = await redis_client.get(k)
+        if data:
+            chains.append(json.loads(data))
+            
+    # Sort by Risk Score descending
+    chains.sort(key=lambda x: x.get("risk_score", 0), reverse=True)
+    return chains
+
+@app.post("/api/v1/soc/incidents/{incident_id}/contain")
+async def execute_soar_containment(incident_id: str, x_tenant_id: str = Header(None)):
+    """One-click manual SOAR containment from Dashboard."""
+    if not redis_client or not x_tenant_id:
+        raise HTTPException(status_code=400)
+
+    # Locate the incident across assets
+    keys = await redis_client.keys(f"tenant:{x_tenant_id}:siem_chain:*:{incident_id}")
+    if not keys:
+        raise HTTPException(status_code=404, detail="Incident chain not found.")
+        
+    inc_raw = await redis_client.get(keys[0])
+    incident = json.loads(inc_raw)
+    asset_id = incident["asset_id"]
+
+    await auto_isolate_asset(x_tenant_id, asset_id, f"Manual SOC Containment for Incident {incident_id}")
+    
+    incident["status"] = "CONTAINED"
+    await redis_client.set(keys[0], json.dumps(incident))
+    return {"status": "success", "message": f"Host {asset_id} isolated successfully."}
+
+# --- SOAR & Tuning API Endpoints ---
+@app.get("/api/v1/siem/tuning")
+async def get_tuning_rules(x_tenant_id: str = Header(None)):
+    if not redis_client or not x_tenant_id:
+        return []
+    keys = await redis_client.keys(f"tenant:{x_tenant_id}:siem_tuning:*")
+    rules = []
+    for k in keys:
+        data = await redis_client.get(k)
+        if data: rules.append(json.loads(data))
+    return rules
+
+@app.post("/api/v1/siem/tuning")
+async def add_tuning_rule(rule: TuningRule, x_tenant_id: str = Header(None)):
+    if not redis_client or not x_tenant_id:
+        raise HTTPException(status_code=400)
+    rule_data = rule.dict() if hasattr(rule, 'dict') else rule.model_dump()
+    await redis_client.set(f"tenant:{x_tenant_id}:siem_tuning:{rule.id}", json.dumps(rule_data))
+    return {"status": "success"}
+
+@app.delete("/api/v1/siem/tuning/{rule_id}")
+async def delete_tuning_rule(rule_id: str, x_tenant_id: str = Header(None)):
+    if not redis_client or not x_tenant_id:
+        raise HTTPException(status_code=400)
+    await redis_client.delete(f"tenant:{x_tenant_id}:siem_tuning:{rule_id}")
+    return {"status": "success"}
+
+@app.get("/api/v1/siem/soar/config")
+async def get_soar_config(x_tenant_id: str = Header(None)):
+    if not redis_client or not x_tenant_id:
+        return {"auto_isolate_enabled": True, "auto_kill_enabled": True}
+    data = await redis_client.get(f"tenant:{x_tenant_id}:soar_config")
+    return json.loads(data) if data else {"auto_isolate_enabled": True, "auto_kill_enabled": True}
+
+@app.post("/api/v1/siem/soar/config")
+async def update_soar_config(config: SoarConfig, x_tenant_id: str = Header(None)):
+    if not redis_client or not x_tenant_id:
+        raise HTTPException(status_code=400)
+    conf_data = config.dict() if hasattr(config, 'dict') else config.model_dump()
+    await redis_client.set(f"tenant:{x_tenant_id}:soar_config", json.dumps(conf_data))
+    return {"status": "success"}
 
 # --- ITSM ---
 @app.get("/api/v1/tickets")
