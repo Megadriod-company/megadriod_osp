@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M-OSP | Enterprise Endpoint & IT Management</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        mosp: {
+                            bg: '#080b12', panel: '#111623', border: '#1e2638',
+                            accent: '#00f0ff', secondary: '#3b82f6',
+                            danger: '#ff2a2a', warning: '#ffea00',
+                            success: '#00ff9d', purple: '#b026ff'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #080b12; color: #e5e7eb; overflow-x: hidden; scroll-behavior: smooth; }
+        .glass-panel {
+            background: rgba(17, 22, 35, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(30, 38, 56, 0.9);
+        }
+        .glow-text { text-shadow: 0 0 20px rgba(0, 240, 255, 0.5); }
+        .hero-gradient { background: radial-gradient(circle at center, rgba(59,130,246,0.15) 0%, rgba(8,11,18,1) 70%); }
+    </style>
+</head>
+<body class="antialiased selection:bg-mosp-accent selection:text-black">
+
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 glass-panel border-b border-mosp-border/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex items-center space-x-3">
+                    <img src="logo.png" alt="M-OSP Logo" class="w-10 h-10 object-contain" onerror="this.outerHTML='<i class=\'ph-fill ph-hexagon text-3xl text-mosp-accent\'></i>'">
+                    <span class="text-2xl font-bold tracking-widest text-white">M-OSP</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#solutions" class="text-sm font-medium text-gray-400 hover:text-mosp-accent transition-colors">Solutions</a>
+                    <a href="#capabilities" class="text-sm font-medium text-gray-400 hover:text-mosp-accent transition-colors">Capabilities</a>
+                    <a href="#audience" class="text-sm font-medium text-gray-400 hover:text-mosp-accent transition-colors">For IT Teams</a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <a href="/dashboard" class="px-6 py-2.5 bg-mosp-accent/10 hover:bg-mosp-accent text-mosp-accent hover:text-black border border-mosp-accent font-bold rounded transition-all text-sm shadow-[0_0_15px_rgba(0,240,255,0.2)]">
+                        Login / Access Console
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden hero-gradient border-b border-mosp-border/30">
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
+            <div class="inline-flex items-center px-3 py-1 rounded-full border border-mosp-secondary/50 bg-mosp-secondary/10 text-mosp-secondary text-xs font-mono mb-8">
+                <span class="w-2 h-2 rounded-full bg-mosp-secondary animate-pulse mr-2"></span> Next-Gen RMM & Zero-Trust Architecture
+            </div>
+            <h1 class="text-5xl md:text-7xl font-bold text-white tracking-tight mb-6">
+                IT Operations & Security,<br>
+                <span class="text-mosp-accent glow-text">Fully Unified.</span>
+            </h1>
+            <p class="mt-4 max-w-3xl mx-auto text-lg md:text-xl text-gray-400 leading-relaxed">
+                Stop jumping between legacy tools. Megadriod M-OSP is the ultimate command center for modern IT administrators, SOC analysts, and MSPs. Automate patching, enforce compliance, and remotely diagnose endpoints <strong>without interrupting the user.</strong>
+            </p>
+            <div class="mt-10 flex flex-col sm:flex-row justify-center items-center gap-4">
+                <a href="/dashboard" class="w-full sm:w-auto px-8 py-4 bg-mosp-secondary hover:bg-blue-500 text-white rounded font-bold transition-all text-base shadow-[0_0_20px_rgba(59,130,246,0.4)] flex items-center justify-center">
+                    Deploy Free Agent <i class="ph ph-arrow-right ml-2 text-xl"></i>
+                </a>
+                <a href="#capabilities" class="w-full sm:w-auto px-8 py-4 bg-transparent border border-gray-600 text-gray-300 hover:text-white hover:border-mosp-accent hover:bg-mosp-panel rounded font-bold transition-all text-base flex items-center justify-center">
+                    Explore Capabilities
+                </a>
+            </div>
+        </div>
+        
+        <!-- Abstract Background UI elements -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-mosp-accent/5 rounded-full blur-[120px] pointer-events-none"></div>
+    </section>
+
+    <!-- The "Why M-OSP" Matrix -->
+    <section id="solutions" class="py-20 bg-mosp-bg relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4">Leave Legacy Workflows Behind</h2>
+                <p class="text-gray-400 max-w-2xl mx-auto">Designed specifically for environments that demand rapid resolution, strict compliance, and absolute zero-touch automation.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="glass-panel p-8 rounded-xl border-t-2 border-t-mosp-accent hover:-translate-y-1 transition-transform duration-300">
+                    <div class="w-14 h-14 rounded-lg bg-mosp-accent/10 border border-mosp-accent/30 flex items-center justify-center mb-6">
+                        <i class="ph ph-magic-wand text-3xl text-mosp-accent"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Zero-Touch Provisioning</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        Say goodbye to manual installations. Generate customized native PowerShell wrappers that integrate directly into your MDT, SCCM, or Intune Golden Images. Devices enroll themselves securely the moment they boot.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="glass-panel p-8 rounded-xl border-t-2 border-t-mosp-secondary hover:-translate-y-1 transition-transform duration-300">
+                    <div class="w-14 h-14 rounded-lg bg-mosp-secondary/10 border border-mosp-secondary/30 flex items-center justify-center mb-6">
+                        <i class="ph ph-terminal-window text-3xl text-mosp-secondary"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Invisible Remediation</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        Stop asking users to "close out of their work" so you can RDP in. Execute over 150+ network, registry, and system diagnostic macros completely silently in the background via encrypted secure shell tunnels.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="glass-panel p-8 rounded-xl border-t-2 border-t-mosp-warning hover:-translate-y-1 transition-transform duration-300">
+                    <div class="w-14 h-14 rounded-lg bg-mosp-warning/10 border border-mosp-warning/30 flex items-center justify-center mb-6">
+                        <i class="ph ph-shield-check text-3xl text-mosp-warning"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Cloud WSUS & GPO</h3>
+                    <p class="text-sm text-gray-400 leading-relaxed">
+                        Ditch your legacy domain controllers. Push software MSIs, deploy configuration baselines, execute startup scripts, and orchestrate OS patch approvals entirely from the cloud to anywhere in the world.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Deep Dive Features -->
+    <section id="capabilities" class="py-20 border-t border-mosp-border/50 bg-[#0a0d14]">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="flex flex-col lg:flex-row items-center gap-16 mb-24">
+                <div class="flex-1 order-2 lg:order-1">
+                    <div class="glass-panel p-2 rounded-xl shadow-2xl border border-mosp-border relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-mosp-danger/20 to-transparent opacity-20 pointer-events-none"></div>
+                        <img src="https://placehold.co/800x500/111623/e5e7eb?text=SOC+Vulnerability+Engine" alt="Security Operations Dashboard" class="rounded-lg w-full h-auto opacity-80" onerror="this.src=''; this.className='hidden';">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <i class="ph ph-bug text-6xl text-mosp-danger mb-4 drop-shadow-[0_0_15px_rgba(255,42,42,0.8)]"></i>
+                            <span class="text-white font-mono bg-black/80 px-4 py-2 rounded border border-mosp-danger">CVE Exposure Mapping</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-1 order-1 lg:order-2">
+                    <h2 class="text-mosp-danger font-mono font-bold text-sm tracking-widest uppercase mb-2">Security Operations Center</h2>
+                    <h3 class="text-3xl md:text-4xl font-bold text-white mb-4">Continuous Zero-Trust Posture</h3>
+                    <p class="text-gray-400 mb-6 leading-relaxed">
+                        Security isn't a point-in-time check. M-OSP agents continuously profile endpoints against critical security benchmarks. If an asset drifts out of compliance—like turning off real-time AV protection or disabling BitLocker—M-OSP detects it, flags the exact risk score, and can even automatically self-remediate the configuration.
+                    </p>
+                    <ul class="space-y-3">
+                        <li class="flex items-start"><i class="ph ph-check-circle text-mosp-success mt-1 mr-3"></i> <span class="text-gray-300 text-sm">Automated CVE vulnerability mapping without external scanners.</span></li>
+                        <li class="flex items-start"><i class="ph ph-check-circle text-mosp-success mt-1 mr-3"></i> <span class="text-gray-300 text-sm">Cloud-Native Local Admin Password Solution (LAPS) vaulting.</span></li>
+                        <li class="flex items-start"><i class="ph ph-check-circle text-mosp-success mt-1 mr-3"></i> <span class="text-gray-300 text-sm">Deep tracking of failed logins, privilege escalations, and log clears.</span></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row items-center gap-16">
+                <div class="flex-1">
+                    <h2 class="text-mosp-purple font-mono font-bold text-sm tracking-widest uppercase mb-2">Network Operations Center</h2>
+                    <h3 class="text-3xl md:text-4xl font-bold text-white mb-4">Distributed Synthetic Probing</h3>
+                    <p class="text-gray-400 mb-6 leading-relaxed">
+                        Turn every device in your fleet into a network sensor. M-OSP gathers real-time gateway latency, Wi-Fi signal strengths, and active TCP socket connections from across your infrastructure, instantly pinpointing ISP outages, DNS bottlenecks, and rogue Top Talkers before end-users even notice.
+                    </p>
+                    <ul class="space-y-3">
+                        <li class="flex items-start"><i class="ph ph-check-circle text-mosp-success mt-1 mr-3"></i> <span class="text-gray-300 text-sm">Automated PathPing and Route Trace macro library.</span></li>
+                        <li class="flex items-start"><i class="ph ph-check-circle text-mosp-success mt-1 mr-3"></i> <span class="text-gray-300 text-sm">Subnet topology and ARP neighbor mapping.</span></li>
+                        <li class="flex items-start"><i class="ph ph-check-circle text-mosp-success mt-1 mr-3"></i> <span class="text-gray-300 text-sm">Instant Incident generation on sustained connectivity drops.</span></li>
+                    </ul>
+                </div>
+                <div class="flex-1">
+                    <div class="glass-panel p-2 rounded-xl shadow-2xl border border-mosp-border relative overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-mosp-purple/20 to-transparent opacity-20 pointer-events-none"></div>
+                        <img src="https://placehold.co/800x500/111623/e5e7eb?text=Network+Telemetry" alt="NOC Dashboard" class="rounded-lg w-full h-auto opacity-80" onerror="this.src=''; this.className='hidden';">
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <i class="ph ph-activity text-6xl text-mosp-purple mb-4 drop-shadow-[0_0_15px_rgba(176,38,255,0.8)]"></i>
+                            <span class="text-white font-mono bg-black/80 px-4 py-2 rounded border border-mosp-purple">Real-Time Connectivity Streams</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Target Audience Section -->
+    <section id="audience" class="py-20 border-t border-mosp-border/50 bg-mosp-bg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 class="text-3xl md:text-4xl font-bold text-white mb-6">Built For Modern IT Professionals</h2>
+            <p class="text-gray-400 max-w-2xl mx-auto mb-16">Whether you are managing a single corporate headquarters or distributed multi-tenant architectures, M-OSP provides the scalability and audit trails required by today's business standards.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="p-6 bg-black/40 border border-mosp-border rounded-lg">
+                    <i class="ph ph-headset text-4xl text-mosp-secondary mb-4"></i>
+                    <h4 class="text-white font-bold mb-2">Helpdesk & IT Support</h4>
+                    <p class="text-xs text-gray-500">Built-in ITIL Service Desk, Remote Task Manager, and single-click BSOD fixers slash resolution times.</p>
+                </div>
+                <div class="p-6 bg-black/40 border border-mosp-border rounded-lg">
+                    <i class="ph ph-shield-check text-4xl text-mosp-success mb-4"></i>
+                    <h4 class="text-white font-bold mb-2">Security Analysts</h4>
+                    <p class="text-xs text-gray-500">Continuous telemetry ensures devices meet strict Zero-Trust Network Access requirements before routing.</p>
+                </div>
+                <div class="p-6 bg-black/40 border border-mosp-border rounded-lg">
+                    <i class="ph ph-file-text text-4xl text-mosp-warning mb-4"></i>
+                    <h4 class="text-white font-bold mb-2">Compliance (GRC)</h4>
+                    <p class="text-xs text-gray-500">Map endpoint controls directly to ISO 27001, HIPAA, and NIST frameworks. Export reports with one click.</p>
+                </div>
+                <div class="p-6 bg-black/40 border border-mosp-border rounded-lg">
+                    <i class="ph ph-buildings text-4xl text-mosp-purple mb-4"></i>
+                    <h4 class="text-white font-bold mb-2">Managed Service Providers</h4>
+                    <p class="text-xs text-gray-500">Multi-tenant logical separation, massive bulk operations, and custom API integrations for your fleet.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 relative overflow-hidden">
+        <div class="absolute inset-0 bg-mosp-panel"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-mosp-bg to-transparent"></div>
+        
+        <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center z-10">
+            <h2 class="text-3xl md:text-5xl font-bold text-white mb-6">Ready to regain control of your endpoints?</h2>
+            <p class="text-gray-400 mb-10 text-lg">Join the next generation of IT Operations. Deploy the M-OSP agent to your fleet and experience absolute visibility in under 5 minutes.</p>
+            <a href="/dashboard" class="inline-flex px-10 py-5 bg-mosp-accent hover:bg-white text-black font-bold rounded-lg transition-all text-lg shadow-[0_0_30px_rgba(0,240,255,0.4)] items-center justify-center group">
+                Enter the Command Center <i class="ph ph-arrow-right ml-3 group-hover:translate-x-1 transition-transform"></i>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-black border-t border-mosp-border py-12">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center">
+            <div class="flex items-center space-x-2 mb-4 md:mb-0">
+                <img src="logo.png" alt="M-OSP Logo" class="w-10 h-10 object-contain" onerror="this.outerHTML='<i class=\'ph-fill ph-hexagon text-3xl text-mosp-accent\'></i>'">
+                <span class="text-white font-bold tracking-widest">Megadriod M-OSP</span>
+            </div>
+            <div class="text-gray-600 text-xs font-mono">
+                &copy; 2026 Megadriod International Limited. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>
