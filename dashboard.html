@@ -1719,6 +1719,7 @@
                 </div>
 
                 <!-- NEW NTA SECURITY TAB -->
+                <div id="tab-net-security" class="net-content hidden space-y-6">
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         
                         <!-- NTA Alerts Feed -->
@@ -2057,7 +2058,7 @@
                                     <i class="ph ph-warning mr-2 text-lg"></i> Escalate Ticket
                                 </button>
                             </div>
-                        </div>
+
                     </div>
                 </div>
 
@@ -2128,15 +2129,15 @@
                                 <div class="bg-mosp-panel/80 p-3 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Fri</div>
                                 <div class="bg-mosp-panel/80 p-3 text-center text-xs font-bold text-gray-400 uppercase tracking-wider">Sat</div>
                             </div>
-                            
-                            <!-- Dynamic Content -->
-                            <div id="calendar-grid" class="flex-1 grid grid-cols-7 gap-px bg-mosp-border">
-                                <!-- Populated by JS -->
+                                <!-- Dynamic Content -->
+                                <div id="calendar-grid" class="flex-1 grid grid-cols-7 gap-px bg-mosp-border">
+                                    <!-- Populated by JS -->
+                                </div>
                             </div>
                         </div>
                     </div>
+            <!-- ADD THIS LINE TO CLOSE view-itsm: -->
             </div>
-            </div> <!-- ADD THIS MISSING DIV RIGHT HERE to close #view-itsm -->
 
             <!-- ========================================= -->
             <!-- VIEW: COMPLIANCE & GRC                    -->
@@ -2935,9 +2936,9 @@
                     </button>
                 </div>
             </div>
-        </div>
-    </main>
-    
+        </main> 
+    </div>
+
     <script>
         // --- ENTERPRISE CONFIGURATION & SESSION HYDRATION ---
         const API_BASE_URL = window.location.origin + "/api/v1";
