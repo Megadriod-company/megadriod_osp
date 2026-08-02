@@ -28,3 +28,4 @@ aiofiles
 python-dotenv
 orjson
 tenacity
+fpdf
