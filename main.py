@@ -45,10 +45,7 @@ app.add_middleware(
 redis_client: redis.Redis | None = None
 
 # Read Redis URL only from the environment
-REDIS_URL = os.environ.get(
-    "REDIS_URL",
-    "rediss://default:gQAAAAAAAqfcAAIgcDE0NzJjMjZiNWI3N2Y0ZDEyOWZkZjE0Mzc3MGUyZWJhMw@better-octopus-174044.upstash.io:6379"
-)
+REDIS_URL = os.getenv("REDIS_URL")
 
 # Enterprise Billing Configuration (Paystack)
 
