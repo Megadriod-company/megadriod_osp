@@ -13,6 +13,7 @@ import psutil
 import httpx
 import uvicorn
 import gzip
+import fpdf
 import glob
 from typing import Dict, List, Any
 from datetime import datetime, timedelta
