@@ -186,6 +186,10 @@
                                 <button class="siem-tab active px-4 py-3 text-xs font-bold text-mosp-secondary uppercase tracking-widest border-b-2 border-mosp-secondary focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('timelines')"><i class="ph ph-git-branch mr-2 text-lg"></i> Correlated Chains</button>
                                 <button class="siem-tab px-4 py-3 text-xs font-bold text-gray-500 hover:text-mosp-secondary uppercase tracking-widest border-b-2 border-transparent focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('triage')"><i class="ph ph-list-dashes mr-2 text-lg"></i> Triage Queue</button>
                                 <button class="siem-tab px-4 py-3 text-xs font-bold text-gray-500 hover:text-mosp-secondary uppercase tracking-widest border-b-2 border-transparent focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('soar')"><i class="ph ph-lightning mr-2 text-lg"></i> SOAR & Tuning</button>
+                                <button class="siem-tab px-4 py-3 text-xs font-bold text-gray-500 hover:text-mosp-secondary uppercase tracking-widest border-b-2 border-transparent focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('sigma')"><i class="ph ph-file-code mr-2 text-lg"></i> Threat Intel (Sigma)</button>
+                                <button class="siem-tab px-4 py-3 text-xs font-bold text-gray-500 hover:text-mosp-secondary uppercase tracking-widest border-b-2 border-transparent focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('heatmap')"><i class="ph ph-squares-four mr-2 text-lg"></i> MITRE ATT&CK Matrix</button>
+                                <button class="siem-tab px-4 py-3 text-xs font-bold text-gray-500 hover:text-mosp-secondary uppercase tracking-widest border-b-2 border-transparent focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('hunt')"><i class="ph ph-magnifying-glass mr-2 text-lg"></i> Threat Hunting</button>
+                                <button class="siem-tab px-4 py-3 text-xs font-bold text-gray-500 hover:text-mosp-secondary uppercase tracking-widest border-b-2 border-transparent focus:outline-none flex items-center transition-colors" onclick="switchSiemTab('cases')"><i class="ph ph-folder-lock mr-2 text-lg"></i> Forensic Cases</button>
                             </div>
                             <div class="px-4">
                                 <button onclick="fetchIncidents()" class="text-gray-400 hover:text-white transition-colors"><i class="ph ph-arrows-clockwise text-lg"></i></button>
@@ -198,6 +202,20 @@
                             <div class="text-center text-gray-500 italic mt-20">
                                 <i class="ph ph-shield-check text-4xl mb-3 opacity-50 block"></i>
                                 No active attack chains detected by correlator.
+                            </div>
+                        </div>
+
+                        <!-- TAB: MITRE Heatmap -->
+                        <div id="tab-heatmap" class="siem-content flex-1 overflow-y-auto p-6 bg-mosp-bg relative hidden">
+                            <div class="flex justify-between items-center mb-6 border-b border-mosp-border pb-3">
+                                <div>
+                                    <h3 class="text-lg font-bold text-white flex items-center"><i class="ph ph-squares-four text-mosp-purple mr-2"></i> MITRE ATT&CK Enterprise Matrix</h3>
+                                    <p class="text-xs text-gray-400 mt-1">Live visualization of active threat vectors targeting the fleet.</p>
+                                </div>
+                            </div>
+                            <!-- Dynamic Matrix Grid -->
+                            <div id="mitre-matrix-grid" class="flex overflow-x-auto space-x-2 pb-4">
+                                <!-- Populated by JS -->
                             </div>
                         </div>
 
@@ -231,8 +249,8 @@
                                             <p class="text-[10px] text-gray-400 mt-1">Triggers on Defense Evasion</p>
                                         </div>
                                         <label class="relative inline-flex items-center cursor-pointer">
-                                          <input type="checkbox" id="soar-toggle-isolate" class="sr-only peer" onchange="updateSoarConfig()">
-                                          <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-mosp-success"></div>
+                                            <input type="checkbox" id="soar-toggle-isolate" class="sr-only peer" onchange="updateSoarConfig()">
+                                            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-mosp-success"></div>
                                         </label>
                                     </div>
                                     <div class="p-4 border border-mosp-border bg-black/40 rounded flex justify-between items-center">
@@ -241,10 +259,30 @@
                                             <p class="text-[10px] text-gray-400 mt-1">Triggers on Suspicious Execution</p>
                                         </div>
                                         <label class="relative inline-flex items-center cursor-pointer">
-                                          <input type="checkbox" id="soar-toggle-kill" class="sr-only peer" onchange="updateSoarConfig()">
-                                          <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-mosp-success"></div>
+                                            <input type="checkbox" id="soar-toggle-kill" class="sr-only peer" onchange="updateSoarConfig()">
+                                            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-mosp-success"></div>
                                         </label>
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Live OSINT API Config -->
+                            <div>
+                                <h3 class="text-sm font-bold text-white mb-4 flex items-center"><i class="ph ph-globe-hemisphere-east text-mosp-accent mr-2 text-xl"></i> Asynchronous OSINT Enrichment APIs</h3>
+                                <div class="glass-panel p-4 border border-mosp-border rounded bg-black/40 space-y-3">
+                                    <div>
+                                        <label class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">AbuseIPDB API Key (IP Reputation)</label>
+                                        <input type="password" id="osint-abuse-key" placeholder="Enter API Key" class="w-full bg-mosp-bg border border-mosp-border rounded px-3 py-1.5 text-xs text-white font-mono outline-none focus:border-mosp-accent">
+                                    </div>
+                                    <div>
+                                        <label class="block text-[10px] text-gray-400 uppercase tracking-widest font-bold mb-1">VirusTotal API Key (Hash Analysis)</label>
+                                        <input type="password" id="osint-vt-key" placeholder="Enter API Key" class="w-full bg-mosp-bg border border-mosp-border rounded px-3 py-1.5 text-xs text-white font-mono outline-none focus:border-mosp-accent">
+                                    </div>
+                                    <div class="flex items-center space-x-2 border border-mosp-border/50 p-2 rounded">
+                                        <input type="checkbox" id="osint-active" class="rounded bg-mosp-bg border-mosp-border text-mosp-accent cursor-pointer">
+                                        <label for="osint-active" class="text-xs font-bold text-gray-300">Enable Live Auto-Enrichment on Incidents</label>
+                                    </div>
+                                    <button onclick="saveOsintConfig()" class="px-4 py-2 bg-mosp-accent/20 hover:bg-mosp-accent text-mosp-accent hover:text-black border border-mosp-accent font-bold rounded text-xs transition-colors">Sync OSINT Providers</button>
                                 </div>
                             </div>
 
@@ -271,8 +309,135 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
 
+                        <!-- TAB: Threat Intel (Sigma) -->
+                        <div id="tab-sigma" class="siem-content flex-1 overflow-y-auto p-6 bg-mosp-bg relative hidden space-y-6">
+                            <div class="flex justify-between items-center mb-2">
+                                <div>
+                                    <h3 class="text-sm font-bold text-white flex items-center"><i class="ph ph-file-code text-mosp-purple mr-2 text-xl"></i> Dynamic Sigma Rule Engine</h3>
+                                    <p class="text-[10px] text-gray-400 mt-1">Deploy industry-standard YAML rules directly to the live correlation firehose.</p>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <!-- Upload Box -->
+                                <div class="glass-panel p-4 border border-mosp-border rounded bg-black/40 flex flex-col h-[400px]">
+                                    <label class="block text-[10px] text-mosp-purple uppercase tracking-widest font-bold mb-2">Paste Sigma YAML Definition</label>
+                                    <textarea id="sigma-yaml-input" class="w-full flex-1 bg-black border border-mosp-border rounded p-3 text-[10px] text-mosp-accent font-mono outline-none focus:border-mosp-purple resize-none custom-scrollbar" placeholder="title: Suspicious PowerShell Download
+id: 12345-abcde...
+logsource:
+  product: windows
+detection:
+  selection:
+    CommandLine|contains: 'Net.WebClient'
+  condition: selection
+level: critical..."></textarea>
+                                    <button onclick="submitSigmaRule()" class="w-full mt-3 px-4 py-2 bg-mosp-purple/20 border border-mosp-purple text-mosp-purple hover:bg-mosp-purple hover:text-white font-bold rounded transition-colors text-xs flex items-center justify-center">
+                                        <i class="ph ph-upload-simple mr-2"></i> Deploy Rule to Correlator
+                                    </button>
+                                </div>
+
+                                <!-- Active Rules List -->
+                                <div class="glass-panel p-4 border border-mosp-border rounded bg-black/40 h-[400px] flex flex-col">
+                                    <div class="flex justify-between items-center mb-3 pb-2 border-b border-mosp-border/50">
+                                        <span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Active Engine Rules</span>
+                                        <button onclick="loadSigmaRules()" class="text-gray-400 hover:text-white"><i class="ph ph-arrows-clockwise"></i></button>
+                                    </div>
+                                    <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="sigma-rules-list">
+                                        <div class="text-center text-gray-500 italic py-12 text-xs">No active Sigma rules.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TAB: Threat Hunting -->
+                        <div id="tab-hunt" class="siem-content flex-1 overflow-y-auto p-6 bg-mosp-bg relative hidden flex flex-col h-full space-y-4">
+                            <div class="flex justify-between items-center border-b border-mosp-border pb-3 flex-shrink-0">
+                                <div>
+                                    <h3 class="text-lg font-bold text-white flex items-center"><i class="ph ph-magnifying-glass text-mosp-accent mr-2"></i> Native Threat Hunting Engine</h3>
+                                    <p class="text-xs text-gray-400 mt-1">Search hot memory streams and decompressed cold-storage archives globally.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex space-x-3 flex-shrink-0">
+                                <div class="relative w-full">
+                                    <i class="ph ph-terminal-window absolute left-4 top-3 text-mosp-accent"></i>
+                                    <input type="text" id="hunt-query" placeholder="Enter IOC (e.g. 192.168.1.50, admin_user, cmd.exe) or Event Type..." class="w-full bg-black/40 border border-mosp-border rounded-lg pl-12 pr-4 py-2.5 text-sm text-white font-mono outline-none focus:border-mosp-accent shadow-inner">
+                                </div>
+                                <button onclick="executeThreatHunt()" id="hunt-btn" class="px-6 py-2.5 bg-mosp-accent/20 hover:bg-mosp-accent text-mosp-accent hover:text-black border border-mosp-accent font-bold rounded transition-colors text-sm flex items-center justify-center whitespace-nowrap shadow-[0_0_10px_rgba(0,240,255,0.2)]">
+                                    Launch Hunt
+                                </button>
+                            </div>
+
+                            <div class="flex-1 overflow-x-auto border border-mosp-border rounded bg-black/20">
+                                <table class="w-full text-left text-xs whitespace-nowrap">
+                                    <thead class="bg-mosp-panel/80 text-gray-400 text-[10px] uppercase tracking-wider font-semibold sticky top-0">
+                                        <tr>
+                                            <th class="px-4 py-3">Timestamp / Stream ID</th>
+                                            <th class="px-4 py-3">Source Data Tier</th>
+                                            <th class="px-4 py-3">Event Type</th>
+                                            <th class="px-4 py-3">Asset ID</th>
+                                            <th class="px-4 py-3 w-1/2">Payload Snippet</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="hunt-results-body" class="divide-y divide-mosp-border/50 text-gray-300 font-mono">
+                                        <tr><td colspan="5" class="text-center py-16 text-gray-500 italic">Enter a query above to scan the enterprise SIEM vaults.</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- TAB: Forensic Cases -->
+                        <div id="tab-cases" class="siem-content flex-1 overflow-y-auto p-6 bg-mosp-bg relative hidden flex-col h-full">
+                            <div class="flex justify-between items-center border-b border-mosp-border pb-3 mb-4 flex-shrink-0">
+                                <div>
+                                    <h3 class="text-lg font-bold text-white flex items-center"><i class="ph ph-folder-lock text-mosp-accent mr-2"></i> Case Management & Evidence Board</h3>
+                                    <p class="text-xs text-gray-400 mt-1">Immutable investigation workspaces and artifact pinning.</p>
+                                </div>
+                                <button onclick="promptCreateCase()" class="px-4 py-2 bg-mosp-accent/20 hover:bg-mosp-accent text-mosp-accent hover:text-black border border-mosp-accent font-bold rounded transition-colors text-xs flex items-center"><i class="ph ph-plus mr-2"></i> Open Investigation</button>
+                            </div>
+                            
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-1 min-h-0">
+                                <!-- Case List -->
+                                <div class="glass-panel border border-mosp-border rounded bg-black/20 flex flex-col overflow-hidden lg:col-span-1">
+                                    <div class="p-3 border-b border-mosp-border bg-mosp-panel/80">
+                                        <span class="text-[10px] text-gray-400 uppercase tracking-widest font-bold">Active Cases</span>
+                                    </div>
+                                    <div id="case-list-body" class="flex-1 overflow-y-auto p-2 space-y-2">
+                                        <div class="text-center py-10 text-gray-500 italic text-xs">No active cases.</div>
+                                    </div>
+                                </div>
+
+                                <!-- Active Case Evidence Board -->
+                                <div class="glass-panel border border-mosp-border rounded bg-black/20 flex flex-col overflow-hidden lg:col-span-2 hidden" id="active-case-board">
+                                    <div class="p-4 border-b border-mosp-border bg-mosp-panel/80 flex justify-between items-start">
+                                        <div>
+                                            <h4 class="text-white font-bold" id="case-view-title">--</h4>
+                                            <p class="text-[10px] text-mosp-accent font-mono mt-1" id="case-view-id">--</p>
+                                        </div>
+                                        <span class="px-2 py-0.5 border border-mosp-warning text-mosp-warning bg-mosp-warning/10 rounded text-[9px] font-bold uppercase tracking-wider">Investigating</span>
+                                    </div>
+                                    
+                                    <div class="flex-1 overflow-y-auto p-4 space-y-6">
+                                        <div>
+                                            <h5 class="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2 border-b border-mosp-border pb-1">Pinned Evidence</h5>
+                                            <div id="case-view-pins" class="space-y-2 font-mono text-[10px]"></div>
+                                        </div>
+                                        <div>
+                                            <h5 class="text-xs text-gray-400 uppercase tracking-widest font-bold mb-2 border-b border-mosp-border pb-1">Investigation Timeline</h5>
+                                            <div id="case-view-notes" class="space-y-3"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="p-3 border-t border-mosp-border bg-mosp-panel/50 flex space-x-2">
+                                        <input type="text" id="case-note-input" placeholder="Append immutable note to case..." class="flex-1 bg-black/40 border border-mosp-border rounded px-3 py-1.5 text-xs text-white outline-none focus:border-mosp-accent">
+                                        <button onclick="submitCaseNote()" class="px-4 py-1.5 bg-mosp-accent text-black font-bold rounded text-xs hover:bg-white transition-colors">Add Note</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
             </div>
         </main>
@@ -473,6 +638,97 @@
                 fetchSoarConfig();
                 fetchTuningRules();
             }
+            
+            if (tabId === 'sigma') {
+                loadSigmaRules();
+            }
+        }
+
+        // --- Dynamic Sigma Rule Engine Management ---
+        async function loadSigmaRules() {
+            const container = document.getElementById('sigma-rules-list');
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/sigma`, { headers: FETCH_HEADERS });
+                if (res.ok) {
+                    const rules = await res.json();
+                    container.innerHTML = '';
+                    if (rules.length === 0) {
+                        container.innerHTML = '<div class="text-center text-gray-500 italic py-12 text-xs">No active Sigma rules.</div>';
+                        return;
+                    }
+                    rules.forEach(r => {
+                        let badgeCol = 'bg-gray-500/20 text-gray-400 border-gray-500';
+                        if(r.level === 'CRITICAL') badgeCol = 'bg-mosp-danger/20 text-mosp-danger border-mosp-danger';
+                        if(r.level === 'HIGH' || r.level === 'SEVERE') badgeCol = 'bg-mosp-warning/20 text-mosp-warning border-mosp-warning';
+                        
+                        container.innerHTML += `
+                            <div class="bg-black/60 border border-mosp-border rounded p-3 flex justify-between items-start group">
+                                <div class="overflow-hidden pr-3">
+                                    <h4 class="text-white text-xs font-bold truncate" title="${r.title}">${r.title}</h4>
+                                    <p class="text-[9px] text-gray-500 font-mono mt-0.5 truncate">${r.id}</p>
+                                    <div class="mt-2 flex items-center space-x-2">
+                                        <span class="text-[8px] font-bold px-1.5 py-0.5 border ${badgeCol} rounded uppercase">${r.level}</span>
+                                        <span class="text-[9px] text-mosp-secondary">Author: ${r.author}</span>
+                                    </div>
+                                </div>
+                                <button onclick="deleteSigmaRule('${r.id}')" class="text-gray-500 hover:text-mosp-danger opacity-0 group-hover:opacity-100 transition-all"><i class="ph ph-trash"></i></button>
+                            </div>
+                        `;
+                    });
+                }
+            } catch(e) { 
+                console.error("Error loading Sigma rules:", e); 
+                container.innerHTML = '<div class="text-center text-mosp-danger py-12 text-xs">Failed to fetch active Sigma rules.</div>';
+            }
+        }
+
+        async function submitSigmaRule() {
+            const yamlContent = document.getElementById('sigma-yaml-input').value.trim();
+            if (!yamlContent) return alert("Please paste a valid Sigma YAML definition.");
+            
+            const btn = document.querySelector('button[onclick="submitSigmaRule()"]');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin mr-2"></i> Deploying...';
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/sigma`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({ yaml_content: yamlContent })
+                });
+                
+                if (res.ok) {
+                    const data = await res.json();
+                    alert(`Sigma Rule deployed successfully: ${data.title}`);
+                    document.getElementById('sigma-yaml-input').value = '';
+                    loadSigmaRules();
+                } else {
+                    const err = await res.json();
+                    alert(`Failed to parse Sigma YAML: ${err.detail}`);
+                }
+            } catch(e) { 
+                console.error("Sigma deployment error:", e); 
+                alert("A network error occurred while deploying the Sigma rule.");
+            } finally {
+                btn.innerHTML = originalText;
+            }
+        }
+
+        async function deleteSigmaRule(id) {
+            if(!confirm("Remove this Sigma rule from the active correlator?")) return;
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/sigma/${id}`, { 
+                    method: 'DELETE', 
+                    headers: FETCH_HEADERS 
+                });
+                if (res.ok) {
+                    loadSigmaRules();
+                } else {
+                    alert("Failed to delete Sigma rule.");
+                }
+            } catch(e) { 
+                console.error("Sigma delete error:", e); 
+            }
         }
 
         async function fetchIncidents() {
@@ -495,25 +751,67 @@
             } catch(e) { console.error("SIEM API Error", e); }
         }
 
+       // --- OSINT Config Functions ---
+        async function fetchOsintConfig() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/osint/config`, { headers: FETCH_HEADERS });
+                if (res.ok) {
+                    const cfg = await res.json();
+                    document.getElementById('osint-abuse-key').value = cfg.abuseipdb_key || '';
+                    document.getElementById('osint-vt-key').value = cfg.virustotal_key || '';
+                    document.getElementById('osint-active').checked = cfg.is_active;
+                }
+            } catch(e) {}
+        }
+
+        async function saveOsintConfig() {
+            try {
+                await fetch(`${API_BASE_URL}/siem/osint/config`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({
+                        abuseipdb_key: document.getElementById('osint-abuse-key').value.trim(),
+                        virustotal_key: document.getElementById('osint-vt-key').value.trim(),
+                        is_active: document.getElementById('osint-active').checked
+                    })
+                });
+                alert("OSINT Enrichment endpoints activated.");
+            } catch(e) {}
+        }
+
+        // --- Overwrite `renderCorrelatorBoard` to Inject MITRE Tags, OSINT Enrichment, & Render Matrix ---
         function renderCorrelatorBoard(chains) {
             const board = document.getElementById('tab-timelines');
+            const matrixGrid = document.getElementById('mitre-matrix-grid');
+            if (matrixGrid) matrixGrid.innerHTML = ''; // Reset Matrix
+            
             if (!chains || chains.length === 0) {
-                 board.innerHTML = `
-                    <div class="text-center text-gray-500 italic mt-20">
-                        <i class="ph ph-shield-check text-4xl mb-3 opacity-50 block"></i>
-                        No active attack chains detected by correlator.
-                    </div>
-                 `;
+                 board.innerHTML = `<div class="text-center text-gray-500 italic mt-20"><i class="ph ph-shield-check text-4xl mb-3 opacity-50 block"></i>No active attack chains detected by correlator.</div>`;
                  return;
             }
             
             board.innerHTML = '';
             document.getElementById('kpi-timelines').innerText = chains.length;
-            
             let critCount = 0;
+            
+            // Map for Matrix Generation
+            let mitreMap = {
+                "Initial Access": {}, "Execution": {}, "Persistence": {}, 
+                "Privilege Escalation": {}, "Defense Evasion": {}, "Credential Access": {},
+                "Discovery": {}, "Lateral Movement": {}, "Command and Control": {}, "Exfiltration": {}
+            };
 
             chains.forEach(chain => {
                 if(chain.severity === 'CRITICAL') critCount++;
+                
+                // Track MITRE occurrences
+                if (chain.mitre_tactic) {
+                    let tacName = chain.mitre_tactic.split(" - ")[1] || chain.mitre_tactic;
+                    if (mitreMap[tacName]) {
+                        let tech = chain.mitre_technique || "Unknown";
+                        mitreMap[tacName][tech] = (mitreMap[tacName][tech] || 0) + 1;
+                    }
+                }
                 
                 let sevBorder = 'border-mosp-secondary shadow-[0_0_10px_rgba(59,130,246,0.1)]';
                 let sevText = 'text-mosp-secondary bg-mosp-secondary/20';
@@ -567,15 +865,35 @@
                      </div>`;
                 }
 
+                // Inject OSINT Enrichment UI Badge if present
+                let enrichmentHtml = '';
+                if (chain.enrichment && Object.keys(chain.enrichment).length > 0) {
+                    let osintBadges = '';
+                    if (chain.enrichment.AbuseIPDB) {
+                        let score = chain.enrichment.AbuseIPDB.abuse_score;
+                        let col = score > 50 ? 'text-mosp-danger border-mosp-danger bg-mosp-danger/10' : 'text-mosp-success border-mosp-success bg-mosp-success/10';
+                        osintBadges += `<span class="px-2 py-1 text-[10px] font-bold border ${col} rounded mr-2"><i class="ph ph-shield-warning"></i> AbuseIPDB Risk: ${score}% (${chain.enrichment.AbuseIPDB.country})</span>`;
+                    }
+                    if (chain.enrichment.VirusTotal) {
+                        let mal = chain.enrichment.VirusTotal.malicious;
+                        let col = mal > 0 ? 'text-mosp-danger border-mosp-danger bg-mosp-danger/10' : 'text-mosp-success border-mosp-success bg-mosp-success/10';
+                        osintBadges += `<span class="px-2 py-1 text-[10px] font-bold border ${col} rounded mr-2"><i class="ph ph-bug"></i> VirusTotal Hits: ${mal}</span>`;
+                    }
+                    enrichmentHtml = `<div class="mb-4 p-2 bg-black/50 border border-mosp-border rounded flex flex-wrap items-center">${osintBadges}</div>`;
+                }
+
                 const html = `
                     <div class="glass-panel p-5 rounded-lg border-2 ${sevBorder} relative overflow-hidden mb-6">
-                        <div class="flex justify-between items-start mb-6 z-10 relative">
+                        <div class="flex justify-between items-start mb-4 z-10 relative">
                             <div>
                                 <h3 class="text-lg font-bold text-white">${chain.title}</h3>
-                                <p class="text-xs text-gray-400 font-mono mt-1">Asset: ${chain.asset_id.substring(0,8)} | Chain ID: ${chain.id.substring(0,8)}</p>
+                                <p class="text-[10px] text-mosp-accent font-bold mt-1 tracking-widest uppercase">${chain.mitre_tactic || 'TA0000'} | ${chain.mitre_technique || 'T0000'}</p>
+                                <p class="text-xs text-gray-400 font-mono mt-1">Involved Asset(s): <span class="text-mosp-accent font-bold">${chain.involved_assets.map(a => a.substring(0,8)).join(', ')}</span> | Chain ID: ${chain.id.substring(0,8)}</p>
                             </div>
                             <span class="px-3 py-1 text-[10px] font-bold uppercase tracking-widest rounded border ${sevBorder.split(' ')[0]} ${sevText}">${chain.severity} (Score: ${chain.risk_score})</span>
                         </div>
+                        
+                        ${enrichmentHtml}
                         
                         <div class="mb-6 relative">
                             <div class="timeline-connector"></div>
@@ -595,7 +913,32 @@
             });
             
             document.getElementById('kpi-critical').innerText = critCount;
+
+            // Render Heatmap Matrix
+            if (matrixGrid) {
+                Object.keys(mitreMap).forEach(tactic => {
+                    let techHtml = '';
+                    Object.entries(mitreMap[tactic]).forEach(([tech, count]) => {
+                        let intensity = count > 5 ? 'bg-mosp-danger/80 border-mosp-danger' : count > 2 ? 'bg-mosp-warning/80 border-mosp-warning text-black' : 'bg-mosp-secondary/50 border-mosp-secondary text-white';
+                        techHtml += `<div class="p-2 mb-2 rounded border text-[10px] font-bold shadow-lg ${intensity}">${tech} <span class="float-right bg-black/50 px-1 rounded">${count}</span></div>`;
+                    });
+                    
+                    matrixGrid.innerHTML += `
+                        <div class="flex-none w-48 bg-black/40 border border-mosp-border rounded flex flex-col h-[600px] overflow-hidden">
+                            <div class="p-2 bg-mosp-panel/80 border-b border-mosp-border text-[10px] text-white font-bold uppercase tracking-wider text-center">${tactic}</div>
+                            <div class="p-2 flex-1 overflow-y-auto">${techHtml}</div>
+                        </div>
+                    `;
+                });
+            }
         }
+
+        // Update switchSiemTab hook for OSINT config
+        const originalSoarHook = switchSiemTab;
+        switchSiemTab = function(tabId) {
+            originalSoarHook(tabId);
+            if (tabId === 'soar') fetchOsintConfig();
+        };
 
         function renderTriageQueue(chains) {
             const tbody = document.getElementById('triage-queue-body');
@@ -750,6 +1093,210 @@
                 }
             } catch(e) { alert("Error issuing containment command."); }
         }
+
+        // --- Threat Hunting Engine ---
+        async function executeThreatHunt() {
+            const query = document.getElementById('hunt-query').value.trim();
+            if (!query) return alert("Please enter a valid IOC or keyword to hunt.");
+            
+            const btn = document.getElementById('hunt-btn');
+            const tbody = document.getElementById('hunt-results-body');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin mr-2"></i> Scanning Vaults...';
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-16 text-mosp-accent italic"><i class="ph ph-spinner animate-spin text-3xl mb-3 block"></i> Decompressing cold storage & scanning hot streams...</td></tr>`;
+
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/hunt`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({ query_string: query })
+                });
+
+                if (res.ok) {
+                    const results = await res.json();
+                    tbody.innerHTML = '';
+                    
+                    if (results.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-16 text-gray-500 italic">No artifacts found matching "${query}" across hot or cold tiers.</td></tr>`;
+                        return;
+                    }
+                    
+                    results.forEach(r => {
+                        let tierBadge = r.source === 'HOT_STREAM' 
+                            ? '<span class="text-mosp-danger bg-mosp-danger/20 border border-mosp-danger px-2 py-0.5 rounded text-[8px] uppercase">HOT (Memory)</span>' 
+                            : '<span class="text-mosp-secondary bg-mosp-secondary/20 border border-mosp-secondary px-2 py-0.5 rounded text-[8px] uppercase">COLD (Disk)</span>';
+                            
+                        let payloadStr = JSON.stringify(r.payload);
+                        // Highlight search term
+                        const regex = new RegExp(`(${query})`, "gi");
+                        payloadStr = payloadStr.replace(regex, '<span class="bg-mosp-warning/40 text-mosp-warning px-1">$1</span>');
+
+                        tbody.innerHTML += `
+                            <tr class="hover:bg-white/5 transition-colors group">
+                                <td class="px-4 py-3 text-[10px]">${r.timestamp.split('-')[0]}</td>
+                                <td class="px-4 py-3">${tierBadge}</td>
+                                <td class="px-4 py-3 text-mosp-accent">${r.event_type}</td>
+                                <td class="px-4 py-3">${(r.asset_id || "SYSTEM").substring(0,8)}</td>
+                                <td class="px-4 py-3 text-[10px] break-all max-w-lg truncate group-hover:whitespace-normal group-hover:break-words">${payloadStr}</td>
+                            </tr>
+                        `;
+                    });
+                }
+            } catch(e) {
+                console.error("Hunt Execution Error:", e);
+                tbody.innerHTML = `<tr><td colspan="5" class="text-center py-16 text-mosp-danger font-bold">Failed to execute distributed query across SIEM vaults.</td></tr>`;
+            } finally {
+                btn.innerHTML = originalText;
+            }
+        }
+
+        // Update switchSiemTab hook for Webhooks and Cases
+        const originalHuntHook = switchSiemTab;
+        switchSiemTab = function(tabId) {
+            originalHuntHook(tabId);
+            if (tabId === 'soar') fetchWebhookConfig();
+            if (tabId === 'cases') fetchCases();
+        };
+
+        // --- Webhook Configuration ---
+        async function fetchWebhookConfig() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/webhooks/config`, { headers: FETCH_HEADERS });
+                if (res.ok) {
+                    const cfg = await res.json();
+                    document.getElementById('webhook-slack').value = cfg.slack_url || '';
+                    document.getElementById('webhook-teams').value = cfg.teams_url || '';
+                    document.getElementById('webhook-active').checked = cfg.is_active;
+                }
+            } catch(e) {}
+        }
+
+        async function saveWebhookConfig() {
+            try {
+                await fetch(`${API_BASE_URL}/siem/webhooks/config`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({
+                        slack_url: document.getElementById('webhook-slack').value.trim(),
+                        teams_url: document.getElementById('webhook-teams').value.trim(),
+                        is_active: document.getElementById('webhook-active').checked
+                    })
+                });
+                alert("Webhook Dispatcher updated.");
+            } catch(e) {}
+        }
+
+        // --- Forensic Case Management ---
+        let activeCaseId = null;
+
+        async function fetchCases() {
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/cases`, { headers: FETCH_HEADERS });
+                if (res.ok) {
+                    const cases = await res.json();
+                    const list = document.getElementById('case-list-body');
+                    list.innerHTML = '';
+                    if (cases.length === 0) {
+                        list.innerHTML = '<div class="text-center py-10 text-gray-500 italic text-xs">No active cases.</div>';
+                        return;
+                    }
+                    
+                    cases.forEach(c => {
+                        list.innerHTML += `
+                            <div onclick="viewCase('${c.id}')" class="p-3 bg-black/40 border border-mosp-border rounded cursor-pointer hover:border-mosp-accent transition-colors group">
+                                <h4 class="text-xs font-bold text-white group-hover:text-mosp-accent">${c.title}</h4>
+                                <p class="text-[9px] text-gray-500 font-mono mt-1">${c.id}</p>
+                            </div>
+                        `;
+                    });
+                }
+            } catch(e) {}
+        }
+
+        async function promptCreateCase() {
+            const title = prompt("Enter Case Title:");
+            if (!title) return;
+            const desc = prompt("Enter Case Description:");
+            
+            try {
+                await fetch(`${API_BASE_URL}/siem/cases`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({ title: title, description: desc || "No description." })
+                });
+                fetchCases();
+            } catch(e) { alert("Failed to open case."); }
+        }
+
+        async function viewCase(id) {
+            activeCaseId = id;
+            document.getElementById('active-case-board').classList.remove('hidden');
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/cases`, { headers: FETCH_HEADERS });
+                const cases = await res.json();
+                const caseData = cases.find(c => c.id === id);
+                if (!caseData) return;
+                
+                document.getElementById('case-view-title').innerText = caseData.title;
+                document.getElementById('case-view-id').innerText = caseData.id;
+                
+                // Render Pins
+                const pinsDiv = document.getElementById('case-view-pins');
+                pinsDiv.innerHTML = caseData.pins.length === 0 ? '<span class="text-gray-600 italic">No artifacts pinned.</span>' : '';
+                caseData.pins.forEach(p => {
+                    pinsDiv.innerHTML += `<div class="p-2 bg-mosp-panel border border-mosp-border rounded"><span class="text-mosp-accent font-bold uppercase">${p.type}</span>: ${p.id} <span class="text-gray-500 float-right">Pinned by ${p.pinned_by}</span></div>`;
+                });
+                
+                // Render Notes
+                const notesDiv = document.getElementById('case-view-notes');
+                notesDiv.innerHTML = caseData.notes.length === 0 ? '<span class="text-gray-600 italic text-[10px]">No timeline events.</span>' : '';
+                caseData.notes.forEach(n => {
+                    notesDiv.innerHTML += `
+                        <div class="pl-3 border-l-2 border-mosp-secondary">
+                            <span class="text-[9px] text-gray-500 font-mono">${new Date(n.timestamp).toLocaleString()} | ${n.author}</span>
+                            <p class="text-xs text-gray-300 mt-0.5">${n.note}</p>
+                        </div>
+                    `;
+                });
+                
+            } catch(e) {}
+        }
+
+        async function submitCaseNote() {
+            if (!activeCaseId) return alert("Select a case first.");
+            const input = document.getElementById('case-note-input');
+            const note = input.value.trim();
+            if (!note) return;
+            
+            try {
+                await fetch(`${API_BASE_URL}/siem/cases/${activeCaseId}/notes`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({ note: note })
+                });
+                input.value = '';
+                viewCase(activeCaseId);
+            } catch(e) {}
+        }
+
+        // Add an overarching function to allow arbitrary UI elements to pin to the board
+        async function pinToCase(type, id, dataObj) {
+            const caseId = prompt("Enter Case ID to pin this artifact to:");
+            if (!caseId) return;
+            
+            try {
+                const res = await fetch(`${API_BASE_URL}/siem/cases/${caseId}/pins`, {
+                    method: 'POST',
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({ artifact_type: type, artifact_id: id, artifact_data: dataObj })
+                });
+                if (res.ok) alert("Evidence pinned to board successfully.");
+                else alert("Failed to pin. Check Case ID.");
+            } catch(e) {}
+        }
+
     </script>
 </body>
 </html>
