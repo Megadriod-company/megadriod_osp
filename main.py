@@ -820,7 +820,7 @@ async def siem_correlation_worker():
                                         "type": "soar_quarantine_endpoint",
                                         "task_id": f"soar_q_{incident_id}",
                                         "target_asset_id": asset_id,
-                                        "data": {"backend_url": "https://megadriod-osp.onrender.com"}
+                                        "data": {"backend_url": "https://megadriodosp.onrender.com"}
                                     })
 
                     # --- CORRELATION RULE 1: Failed Logins & Brute Force ---
@@ -927,7 +927,7 @@ async def siem_correlation_worker():
                                     "type": "soar_quarantine_endpoint",
                                     "task_id": f"soar_q_{incident_id}",
                                     "target_asset_id": asset_id,
-                                    "data": {"backend_url": "https://megadriod-osp.onrender.com"}
+                                    "data": {"backend_url": "https://megadriodosp.onrender.com"}
                                 }
                                 await manager.route_to_target(tenant_id, asset_id, q_payload)
 
@@ -1837,8 +1837,8 @@ async def download_agent_binary(tenant_id: str = None, x_tenant_id: str = Header
     active_tenant = tenant_id or x_tenant_id or "Setup"
     
     github_release_url = "https://github.com/megadriodteam/megadriod-osp/releases/download/v1.0.0/MOSP-Agent.exe"
-    server_url = "https://megadriod-osp.onrender.com/api/v1"
-    ws_url = "wss://megadriod-osp.onrender.com/ws"
+    server_url = "https://megadriodosp.onrender.com/api/v1"
+    ws_url = "wss://megadriodosp.onrender.com/ws"
     
     bat_content = f"""@echo off
 title M-OSP Enterprise Agent Setup
@@ -3965,8 +3965,8 @@ if (-not (Test-Path $AgentDir)) {{ New-Item -ItemType Directory -Force -Path $Ag
 
 $ConfigJson = @"
 {{
-    "api_base_url": "https://megadriod-osp.onrender.com/api/v1",
-    "ws_base_url": "wss://megadriod-osp.onrender.com/ws",
+    "api_base_url": "https://megadriodosp.onrender.com/api/v1",
+    "ws_base_url": "wss://megadriodosp.onrender.com/ws",
     "tenant_id": "$TenantID",
     "agent_api_key": ""
 }}
@@ -4233,7 +4233,7 @@ async def manual_soar_trigger(payload: dict, x_tenant_id: str = Header(None)):
     
     if action == "quarantine":
         cmd_payload["type"] = "soar_quarantine_endpoint"
-        cmd_payload["data"]["backend_url"] = payload.get("backend_url", "https://megadriod-osp.onrender.com")
+        cmd_payload["data"]["backend_url"] = payload.get("backend_url", "https://megadriodosp.onrender.com")
     elif action == "suspend_user":
         cmd_payload["type"] = "soar_suspend_user"
         cmd_payload["data"]["username"] = target
