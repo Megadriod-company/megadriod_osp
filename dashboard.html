@@ -8080,122 +8080,216 @@
             originalAppendTerminalOutput(payload);
         };
 
-        // ==========================================
-        // DYNAMIC REPORTING ENGINE (ITF & SOC)
-        // ==========================================
+       // =====================================================================
+        // REPORTING & ARTIFACT DOWNLOAD ENGINE
+        // =====================================================================
 
-        function startReportPolling() {
-            if (!reportPollInterval) {
-                fetchReportQueues();
-                reportPollInterval = setInterval(fetchReportQueues, 5000);
-            }
-        }
-
-        function stopReportPolling() {
-            if (reportPollInterval) {
-                clearInterval(reportPollInterval);
-                reportPollInterval = null;
-            }
+        async function autoGenerateItfReport() {
+            await executeReportDispatch('inventory', 'pdf', null, 'ITF Auto-Generated Full Fleet Audit');
         }
 
         async function dispatchItfReportTask() {
             const type = document.getElementById('itf-report-type').value;
             const format = document.getElementById('itf-report-format').value;
-            const email = document.getElementById('itf-report-email').value;
-            await dispatchReportBase(type, format, email);
+            const email = document.getElementById('itf-report-email').value.trim();
+            await executeReportDispatch(type, format, email, 'IT Operations Custom Task');
         }
 
-        function autoGenerateItfReport() {
-            dispatchReportBase('inventory', 'csv', null);
+        async function autoGenerateSecReport() {
+            await executeReportDispatch('vulnerability', 'pdf', null, 'Cybersecurity Automated Threat Audit');
         }
 
         async function dispatchSecReportTask() {
             const type = document.getElementById('sec-report-type').value;
             const format = document.getElementById('sec-report-format').value;
-            const email = document.getElementById('sec-report-email').value;
-            await dispatchReportBase(type, format, email);
+            const email = document.getElementById('sec-report-email').value.trim();
+            await executeReportDispatch(type, format, email, 'SOC Threat Intelligence Report');
         }
 
-        function autoGenerateSecReport() {
-            dispatchReportBase('siem_incidents', 'pdf', null);
+        async function requestComplianceReport(e) {
+            if (e) e.preventDefault();
+            const btn = document.getElementById('btn-export');
+            btn.innerHTML = '<i class="ph ph-spinner animate-spin mr-2"></i> Compiling Audit Artifact...';
+
+            const type = document.getElementById('export-type').value;
+            const format = document.getElementById('export-format').value;
+            const email = document.getElementById('export-email').value.trim();
+
+            await executeReportDispatch(type, format, email, 'Compliance & GRC Export');
+            btn.innerHTML = '<i class="ph ph-paper-plane-right mr-2 text-lg"></i> Dispatch Report Generation';
         }
 
-        async function dispatchReportBase(type, format, email) {
+        async function executeReportDispatch(type, format, email, label) {
+            updateHeaders();
             try {
-                const res = await fetch(`${API_BASE_URL}/reports?type=${type}&format=${format}${email ? '&email=' + encodeURIComponent(email) : ''}`, {
+                const res = await fetch(`${API_BASE_URL}/reports`, {
                     method: 'POST',
-                    headers: FETCH_HEADERS
+                    headers: FETCH_HEADERS,
+                    body: JSON.stringify({
+                        type: type,
+                        format: format,
+                        email: email || null
+                    })
                 });
-                if (res.ok) {
-                    fetchReportQueues();
-                } else {
-                    alert("Failed to dispatch report generation task.");
+
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.detail || "Dispatch rejected by gateway.");
                 }
-            } catch (e) { console.error("Report dispatch error:", e); }
+
+                const task = await res.json();
+                renderOptimisticTask(task);
+                pollReportTask(task.id);
+            } catch (err) {
+                alert(`Report Dispatch Fault: ${err.message}`);
+            }
+        }
+
+        function renderOptimisticTask(task) {
+            const itfBody = document.getElementById('itf-queue-body');
+            const secBody = document.getElementById('sec-queue-body');
+
+            const rowHtml = `
+                <tr id="task-row-${task.id}" class="bg-mosp-accent/5 animate-pulse">
+                    <td class="px-4 py-3 font-mono text-white font-bold">${task.id}</td>
+                    <td class="px-4 py-3 uppercase">${task.type}</td>
+                    <td class="px-4 py-3 uppercase font-bold text-mosp-accent">${task.format}</td>
+                    <td class="px-4 py-3"><span id="task-status-${task.id}" class="px-2 py-0.5 rounded text-[10px] font-bold bg-mosp-warning/20 text-mosp-warning border border-mosp-warning/40">PROCESSING</span></td>
+                    <td class="px-4 py-3 text-right" id="task-action-${task.id}">
+                        <i class="ph ph-spinner animate-spin text-mosp-accent text-base"></i>
+                    </td>
+                </tr>
+            `;
+
+            if (itfBody && (task.type === 'inventory' || task.type === 'patch_matrix' || task.type === 'sla' || task.type === 'network_performance')) {
+                if (itfBody.innerHTML.includes('No active ITF reports')) itfBody.innerHTML = '';
+                itfBody.insertAdjacentHTML('afterbegin', rowHtml);
+            }
+            if (secBody && (task.type === 'vulnerability' || task.type === 'siem_incidents' || task.type === 'posture' || task.type === 'nta_anomalies')) {
+                if (secBody.innerHTML.includes('No active Security reports')) secBody.innerHTML = '';
+                secBody.insertAdjacentHTML('afterbegin', rowHtml);
+            }
+        }
+
+        async function pollReportTask(taskId) {
+            updateHeaders();
+            const pollInterval = setInterval(async () => {
+                try {
+                    const res = await fetch(`${API_BASE_URL}/reports/${taskId}`, { headers: FETCH_HEADERS });
+                    if (!res.ok) return;
+
+                    const task = await res.json();
+                    const statusBadge = document.getElementById(`task-status-${taskId}`);
+                    const actionCell = document.getElementById(`task-action-${taskId}`);
+                    const row = document.getElementById(`task-row-${taskId}`);
+
+                    if (task.status === 'Completed') {
+                        clearInterval(pollInterval);
+                        if (row) row.classList.remove('animate-pulse');
+                        if (statusBadge) {
+                            statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-mosp-success/20 text-mosp-success border border-mosp-success/40';
+                            statusBadge.innerText = 'READY';
+                        }
+                        if (actionCell) {
+                            actionCell.innerHTML = `
+                                <button onclick="downloadReportFile('${task.id}', '${task.file_name || task.id}')" class="px-3 py-1 bg-mosp-accent text-black font-bold rounded text-xs hover:bg-white transition-colors flex items-center ml-auto shadow-[0_0_8px_rgba(0,240,255,0.4)]">
+                                    <i class="ph ph-download-simple mr-1.5"></i> Download
+                                </button>
+                            `;
+                        }
+                    } else if (task.status === 'Failed') {
+                        clearInterval(pollInterval);
+                        if (row) row.classList.remove('animate-pulse');
+                        if (statusBadge) {
+                            statusBadge.className = 'px-2 py-0.5 rounded text-[10px] font-bold bg-mosp-danger/20 text-mosp-danger border border-mosp-danger/40';
+                            statusBadge.innerText = 'FAILED';
+                        }
+                        if (actionCell) {
+                            actionCell.innerHTML = `<span class="text-[10px] text-mosp-danger" title="${task.error_message}">Error</span>`;
+                        }
+                    }
+                } catch (e) {
+                    clearInterval(pollInterval);
+                }
+            }, 1500);
         }
 
         async function fetchReportQueues() {
+            updateHeaders();
             try {
-                const res = await fetch(`${API_BASE_URL}/admin/queues`, { headers: FETCH_HEADERS });
+                const res = await fetch(`${API_BASE_URL}/reports`, { headers: FETCH_HEADERS });
                 if (!res.ok) return;
-                const data = await res.json();
-                
-                const itfQueue = document.getElementById('itf-queue-body');
-                const secQueue = document.getElementById('sec-queue-body');
-                
-                if(itfQueue) itfQueue.innerHTML = '';
-                if(secQueue) secQueue.innerHTML = '';
-                
-                let itfCount = 0;
-                let secCount = 0;
+                const tasks = await res.json();
+
+                const itfBody = document.getElementById('itf-queue-body');
+                const secBody = document.getElementById('sec-queue-body');
 
                 const itfModules = ['inventory', 'patch_matrix', 'sla', 'network_performance'];
                 const secModules = ['vulnerability', 'siem_incidents', 'posture', 'nta_anomalies'];
 
-                (data.recent_tasks || []).forEach(t => {
-                    if (t.type !== 'Report Generation') return; 
-                    
-                    // The backend sends payload as "module_type|format"
-                    const parts = (t.payload || "").split('|');
-                    const moduleType = parts[0];
-                    const formatType = parts.length > 1 ? parts[1].toUpperCase() : 'SYS';
+                const itfTasks = tasks.filter(t => itfModules.includes(t.type));
+                const secTasks = tasks.filter(t => secModules.includes(t.type));
 
-                    let statusBadge = `<span class="text-mosp-warning font-bold">PENDING</span>`;
-                    if (t.status === 'COMPLETED') statusBadge = `<span class="text-mosp-success font-bold">COMPLETED</span>`;
-                    if (t.status === 'FAILED') statusBadge = `<span class="text-mosp-danger font-bold">FAILED</span>`;
-
-                    let dlButton = t.status === 'COMPLETED' 
-                        ? `<button onclick="downloadArtifact('${t.id}')" class="px-3 py-1.5 bg-mosp-panel border border-mosp-border text-white rounded text-[10px] font-bold hover:bg-white/10 transition-colors shadow-[0_0_8px_rgba(255,255,255,0.1)]"><i class="ph ph-download-simple mr-1"></i> Download</button>` 
-                        : '-';
-
-                    const rowHtml = `
-                        <tr class="hover:bg-white/5 border-b border-mosp-border/50">
-                            <td class="px-4 py-3 font-mono text-gray-400 text-[10px]">${t.id}</td>
-                            <td class="px-4 py-3 uppercase tracking-wider font-bold text-white text-[10px]">${moduleType.replace('_', ' ')}</td>
-                            <td class="px-4 py-3 font-mono text-mosp-secondary font-bold text-[10px]">${formatType}</td>
-                            <td class="px-4 py-3 text-[10px]">${statusBadge}</td>
-                            <td class="px-4 py-3 text-right">${dlButton}</td>
-                        </tr>
-                    `;
-
-                    // Route to correct operational queue
-                    if (itfModules.includes(moduleType) && itfQueue) {
-                        itfQueue.innerHTML += rowHtml;
-                        itfCount++;
-                    } else if (secModules.includes(moduleType) && secQueue) {
-                        secQueue.innerHTML += rowHtml;
-                        secCount++;
+                if (itfBody) {
+                    if (itfTasks.length === 0) {
+                        itfBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500 italic">No active ITF reports in queue.</td></tr>';
+                    } else {
+                        itfBody.innerHTML = itfTasks.map(t => renderQueueRow(t)).join('');
                     }
-                });
+                }
 
-                if (itfCount === 0 && itfQueue) itfQueue.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500 italic">No active ITF reports in queue.</td></tr>`;
-                if (secCount === 0 && secQueue) secQueue.innerHTML = `<tr><td colspan="5" class="text-center py-8 text-gray-500 italic">No active Security reports in queue.</td></tr>`;
-
-            } catch(e) {}
+                if (secBody) {
+                    if (secTasks.length === 0) {
+                        secBody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500 italic">No active Security reports in queue.</td></tr>';
+                    } else {
+                        secBody.innerHTML = secTasks.map(t => renderQueueRow(t)).join('');
+                    }
+                }
+            } catch (err) {
+                console.error("Queue sync error:", err);
+            }
         }
 
-        function downloadArtifact(taskId) {
-            window.open(`${API_BASE_URL}/files/${taskId}/download`, '_blank');
+        function renderQueueRow(task) {
+            const isDone = task.status === 'Completed';
+            const isFailed = task.status === 'Failed';
+            
+            let statusMarkup = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-mosp-warning/20 text-mosp-warning border border-mosp-warning/40">PROCESSING</span>`;
+            if (isDone) statusMarkup = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-mosp-success/20 text-mosp-success border border-mosp-success/40">READY</span>`;
+            if (isFailed) statusMarkup = `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-mosp-danger/20 text-mosp-danger border border-mosp-danger/40">FAILED</span>`;
+
+            let actionMarkup = `<i class="ph ph-spinner animate-spin text-mosp-accent text-base"></i>`;
+            if (isDone) {
+                actionMarkup = `
+                    <button onclick="downloadReportFile('${task.id}', '${task.file_name || task.id}')" class="px-3 py-1 bg-mosp-accent text-black font-bold rounded text-xs hover:bg-white transition-colors flex items-center ml-auto shadow-[0_0_8px_rgba(0,240,255,0.4)]">
+                        <i class="ph ph-download-simple mr-1.5"></i> Download
+                    </button>
+                `;
+            } else if (isFailed) {
+                actionMarkup = `<span class="text-[10px] text-mosp-danger" title="${task.error_message}">Error</span>`;
+            }
+
+            return `
+                <tr id="task-row-${task.id}">
+                    <td class="px-4 py-3 font-mono text-white font-bold">${task.id}</td>
+                    <td class="px-4 py-3 uppercase">${task.type}</td>
+                    <td class="px-4 py-3 uppercase font-bold text-mosp-accent">${task.format}</td>
+                    <td class="px-4 py-3">${statusMarkup}</td>
+                    <td class="px-4 py-3 text-right">${actionMarkup}</td>
+                </tr>
+            `;
+        }
+
+        function downloadReportFile(fileId, fileName) {
+            const directUrl = `${API_BASE_URL}/files/${fileId}/download`;
+            
+            // Native Blob Stream Trigger
+            const link = document.createElement('a');
+            link.href = directUrl;
+            link.setAttribute('download', fileName || `MOSP_Export_${fileId}`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // ==========================================
